@@ -22,14 +22,16 @@ from mcfw.restapi import rest
 from mcfw.rpc import returns, arguments
 from rogerthat.rpc import users
 from rogerthat.service.api.payments import get_provider, put_provider
+from solutions.common.to.payments import PayconiqProviderTO
 
 
 @rest('/common/payments/payconiq', 'get', read_only_access=True, silent_result=True)
-@returns()
+@returns(PayconiqProviderTO)
 @arguments()
 def rest_get_payconiq_settings():
     service_identity = users.get_current_session().service_identity
-    return get_provider(u'payconiq', service_identity)
+    r = get_provider(u'payconiq', service_identity)
+    return PayconiqProviderTO.fromProvider(r)
 
 
 @rest('/common/payments/payconiq', 'post')
@@ -43,4 +45,4 @@ def rest_put_news_item(merchant_id, jwt, online_key):
         u'jwt': jwt,
         u'online_key': online_key
     }
-    return put_provider(u'payconiq', json.dumps(settings), service_identity)
+    return put_provider(u'payconiq', json.dumps(settings).decode('utf8'), service_identity)
