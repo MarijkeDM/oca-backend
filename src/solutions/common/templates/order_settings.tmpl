@@ -12,6 +12,32 @@
             width: auto;
         }
     </style>
+    
+    {% if customer.payconiq_possible %}
+    <div id="mobile_payments_container" class="clearfix">
+        <h3>{% translate language, 'common', 'mobile_payments' %}</h3>
+        <h4>Payconiq</h4>
+        <p>payconiq uitleg tekstje + example email how to get started ... TODO</p>
+
+        <div>
+            <div class="pull-left control-group" style="margin-right: 30px;">
+                <label class="control-label" for="payconicMerchantId">Merchant ID</label>
+                <input id="payconicMerchantId" type="text" style="width: 450px;"/>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="payconicOnlineKey">Online KEY</label>
+                <input id="payconicOnlineKey" type="text" style="width: 450px;"/>
+            </div>
+        </div>
+        <div class="control-group">
+            <label class="control-label" for="payconiqAccessToken">Access token</label>
+            <textarea id="payconiqAccessToken" type="text" rows="4" style="width: 945px;"></textarea>
+        </div>
+
+        <button id="payconiqSave" class="btn btn-success control"> {% translate language, "common", "Save" %}</button>
+    </div>
+    <hr>
+    {% endif %}
 
     <h3>{% translate language, 'common', 'order_type' %}</h3>
 

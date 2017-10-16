@@ -17,11 +17,14 @@
 
 
 import json
+import logging
 
 from mcfw.restapi import rest
 from mcfw.rpc import returns, arguments
 from rogerthat.rpc import users
+from rogerthat.rpc.service import ServiceApiException
 from rogerthat.service.api.payments import get_provider, put_provider
+from rogerthat.to import ReturnStatusTO
 from solutions.common.to.payments import PayconiqProviderTO
 
 
@@ -35,7 +38,7 @@ def rest_get_payconiq_settings():
 
 
 @rest('/common/payments/payconiq', 'post')
-@returns()
+@returns(ReturnStatusTO)
 @arguments(merchant_id=unicode, jwt=unicode, online_key=unicode)
 def rest_put_news_item(merchant_id, jwt, online_key):
     service_identity = users.get_current_session().service_identity
@@ -45,4 +48,10 @@ def rest_put_news_item(merchant_id, jwt, online_key):
         u'jwt': jwt,
         u'online_key': online_key
     }
-    return put_provider(u'payconiq', json.dumps(settings).decode('utf8'), service_identity)
+
+    try:
+        put_provider(u'payconiq', json.dumps(settings).decode('utf8'), service_identity)
+        return ReturnStatusTO.create(True, None)
+    except ServiceApiException as e:
+        logging.exception(e)
+        return ReturnStatusTO.create(False, None)

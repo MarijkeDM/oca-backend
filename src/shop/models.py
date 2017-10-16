@@ -390,6 +390,12 @@ class Customer(db.Model):
             if cc:
                 return cc.valid
         return False
+    
+    @property
+    def payconiq_possible(self):
+        if self.country in ('BE', 'NL',):
+            return True
+        return False
 
     @property
     def app_id(self):

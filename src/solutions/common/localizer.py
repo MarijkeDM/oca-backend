@@ -25,6 +25,7 @@ translations = \
          u'(optional)': u'(optional)',
          u'0 upcoming events. Make sure your region is correct.': u'No upcoming events found. Make sure your region is correct.',
          u'1 stamp per scan': u'1 stamp per scan',
+         u'mobile_payments': u'Mobile payments',
          u'<Picture>': u'<Picture>',
          u'<Video>': u'<Video>',
          u'About': u'About',

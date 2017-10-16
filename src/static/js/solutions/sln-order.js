@@ -438,12 +438,43 @@ $(function () {
         showMeridian: false,
         minuteStep: 5
     });
+    
+    var loadPayconiq = function () {
+        sln.call({
+            url: "/common/payments/payconiq",
+            type: "GET",
+            success: function (data) {
+            	$("#payconicMerchantId").val(data.merchant_id ? ata.merchant_id : '' );
+            	$("#payconicOnlineKey").val(data.online_key ? data.online_key : '');
+            	$("#payconiqAccessToken").val(data.jwt ? data.jwt : '');
+            }
+        });
+    };
 
+    $("#payconiqSave").click(function () {
+    	sln.call({
+            url: "/common/payments/payconiq",
+            type: "POST",
+            data: {
+                data: JSON.stringify({
+                	merchant_id: $("#payconicMerchantId").val(),
+                    online_key: $("#payconicOnlineKey").val(),
+                    jwt: $("#payconiqAccessToken").val()
+                })
+            },
+            success: function (data) {
+                if (!data.success) {
+                    return sln.alert(data.errormsg, null, CommonTranslations.ERROR);
+                }
+            }
+        });
+    });
 
     sln.registerMsgCallback(channelUpdates);
     loadOrders();
     renderOrderSettings(orderSettings); // orderSettings defined in index.html
     updateShowHideOrders();
+    loadPayconiq();
 
     sln.registerInboxActionListener("order", function (chatId) {
         var o = solutionInboxMessageOrders[chatId];
