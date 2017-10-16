@@ -444,7 +444,7 @@ $(function () {
             url: "/common/payments/payconiq",
             type: "GET",
             success: function (data) {
-            	$("#payconicMerchantId").val(data.merchant_id ? ata.merchant_id : '' );
+            	$("#payconicMerchantId").val(data.merchant_id ? data.merchant_id : '' );
             	$("#payconicOnlineKey").val(data.online_key ? data.online_key : '');
             	$("#payconiqAccessToken").val(data.jwt ? data.jwt : '');
             }
