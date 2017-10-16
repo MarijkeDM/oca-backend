@@ -97,8 +97,25 @@
                     <category id="{{ category.id|e }}">
                         <name>{{ category.name|e }}</name>
                         {% for item in category.items %}
-                            {% if item.visible %}
-                            <item id="{{ item.id|e }}"
+                            {% if not item.visible %}
+                            {% elif settings.payment_enabled %}
+                                {% if item.has_price and not item.step_unit %}
+                                    <item id="{{ item.id|e }}"
+	                                  value="0"
+	                                  unitPrice="{{ item.price }}"
+	                                  hasPrice="true"
+	                                  step="{{ item.step }}"
+	                                  unit="{{ item.unit_str }}"
+	                                  {% if item.image_url %}
+	                                  imageUrl="{{ item.image_url }}"
+	                                  {% endif %}
+	                                >
+	                                    <name>{{ item.name|e }}</name>
+	                                    {% if item.description %}<description>{{ item.description|e }}</description>{% endif %}
+	                                </item>
+                                {% endif %}
+                            {% else %}
+                                <item id="{{ item.id|e }}"
                                   value="0"
                                   unitPrice="{% if item.has_price %}{{ item.price }}{% else %}0{% endif %}"
                                   hasPrice="{{ item.has_price|lower }}"
@@ -350,14 +367,79 @@
                 };
             </javascriptCode>
         </flowCode>
+        
+        <flowCode
+            id="flowcode_calculate_payment"
+            exceptionReference="flush_advanced_order_processing">
+            <outlet
+                reference="message_pay"
+                name="message_pay"
+                value="message_pay" />
+            <outlet
+                reference="flush_advanced_order_processing"
+                name="flush_advanced_order_processing"
+                value="flush_advanced_order_processing" />
+            <javascriptCode>
+               function run(rogerthat, messageFlowRun) {
+                    var steps = messageFlowRun.steps;
+                    var amount = 0;
+                    var categories = steps[0].form_result.result.categories;
+                    for (var ci = 0; ci &lt; categories.length; ci++) {
+	                    for (var ii = 0; ii &lt; categories[ci].items.length; ii++) {
+	                        if (categories[ci].items[ii].value &gt; 0) {
+	                           amount += categories[ci].items[ii].value * categories[ci].items[ii].unit_price;
+	                        }
+	                    }
+                    }
+
+                    if (amount %lt;= 0) {
+                        return {outlet: 'flush_advanced_order_processing'};
+                    }
+
+                    var nextStepResult = {};
+                    nextStepResult.outlet ='message_pay';
+                    nextStepResult.defaultValue = {
+			            'methods': [{
+                            'provider_id': 'payconiq',
+                            'currency': 'EUR',
+                            'amount': amount,
+                            'precision': 2
+                        }]
+			        };
+                    return nextStepResult;
+                };
+            </javascriptCode>
+        </flowCode>
+
+        <formMessage brandingKey="{{ branding_key }}"
+                     id="message_pay"
+                     alertIntervalType="NONE" alertType="SILENT"
+                     positiveReference="flush_advanced_order_processing"
+                     negativeReference="{% if settings.payment_optional %}flush_advanced_order_processing{% else %}end_advanced_order{% endif %}"
+                     vibrate="false" autoLock="true">
+        
+            <content/>
+            <form positiveButtonConfirmation="" negativeButtonConfirmation=""
+                  positiveButtonCaption="{% translate language, 'common', 'Next' %}"
+                  negativeButtonCaption="{% if settings.payment_optional %}{% translate language, 'common', 'skip' %}{% else %}{% translate language, 'common', 'Cancel' %}{% endif %}">
+                <widget xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="PayWidget" memo="App order" target="todo rogerthat.service.account">
+                    <method>
+                        <provider_id>payconiq</provider_id>
+                        <currency>EUR</currency>
+                        <amount>1</amount>
+                        <precision>2</precision>
+                    </method>
+                </widget>
+            </form>
+        </formMessage>
 
         <flowCode
             id="flow_code_check_internet_before_flush"
-            exceptionReference="flush_advanced_order_processing">
+            exceptionReference="flowcode_calculate_payment">
             <outlet
-                name="flush_advanced_order_processing"
-                value="flush_advanced_order_processing"
-                reference="flush_advanced_order_processing"/>
+                name="flowcode_internet"
+                value="flowcode_internet"
+                reference="{% if settings.payment_enabled %}flowcode_calculate_payment{% else %}flush_advanced_order_processing{% endif %}"/>
             <outlet
                 name="message_no_internet"
                 value="message_no_internet"
@@ -367,7 +449,7 @@
                     if (rogerthat.system.internet &amp;&amp; !rogerthat.system.internet.connected) {
                         return {outlet: 'message_no_internet'};
                     }
-                    return {outlet: 'flush_advanced_order_processing'};
+                    return {outlet: 'flowcode_internet'};
                 };
             </javascriptCode>
         </flowCode>

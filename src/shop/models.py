@@ -392,7 +392,7 @@ class Customer(db.Model):
         return False
     
     @property
-    def payconiq_possible(self):
+    def payment_possible(self):
         if self.country in ('BE', 'NL',):
             return True
         return False

@@ -13,28 +13,21 @@
         }
     </style>
     
-    {% if customer.payconiq_possible %}
+    {% if customer.payment_possible %}
     <div id="mobile_payments_container" class="clearfix">
         <h3>{% translate language, 'common', 'mobile_payments' %}</h3>
-        <h4>Payconiq</h4>
+        <div class="clearfix">
+            <div class="payment-enabled" style="float:left;"></div>
+            <div class="payment-optional" style="float:left; margin-left: 20px;"></div>
+        </div>
+        <br>
+        <h4 class="clearfix">
+            <div class="pull-left" style="margin-right: 10px;">Payconiq</div>
+            <div class="pull-left" id="payconiqSettings" href="#payconiqSettingsModal" data-toggle="modal" style="cursor: pointer">
+                <span class="functionality-settings-icon"><i class="fa fa-cog"></i></span>
+            </div>
+        </h4>
         <p>payconiq uitleg tekstje + example email how to get started ... TODO</p>
-
-        <div>
-            <div class="pull-left control-group" style="margin-right: 30px;">
-                <label class="control-label" for="payconicMerchantId">Merchant ID</label>
-                <input id="payconicMerchantId" type="text" style="width: 450px;"/>
-            </div>
-            <div class="control-group">
-                <label class="control-label" for="payconicOnlineKey">Online KEY</label>
-                <input id="payconicOnlineKey" type="text" style="width: 450px;"/>
-            </div>
-        </div>
-        <div class="control-group">
-            <label class="control-label" for="payconiqAccessToken">Access token</label>
-            <textarea id="payconiqAccessToken" type="text" rows="4" style="width: 945px;"></textarea>
-        </div>
-
-        <button id="payconiqSave" class="btn btn-success control"> {% translate language, "common", "Save" %}</button>
     </div>
     <hr>
     {% endif %}
@@ -137,6 +130,33 @@
             <button id="save_order_timeframe" class="btn btn-primary" aria-hidden="true">{% translate language,
                 "common", "Save" %}
             </button>
+        </div>
+    </div>
+    
+    <div id="payconiqSettingsModal" class="modal hide fade" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-header clearfix">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <h3>{% translate language, "common", "Settings" %}</h3>
+        </div>
+        <div class="modal-body" style="min-height: 200px;">
+            <div>
+                <div class="control-group">
+                    <label class="control-label" for="payconicMerchantId">Merchant ID</label>
+                    <input id="payconicMerchantId" type="text" style="width: 95%;"/>
+                </div>
+                <div class="control-group">
+                    <label class="control-label" for="payconicOnlineKey">Online KEY</label>
+                    <input id="payconicOnlineKey" type="text" style="width: 95%;"/>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="payconiqAccessToken">Access token</label>
+                <textarea id="payconiqAccessToken" type="text" rows="7" style="width: 95%;"></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn" data-dismiss="modal" aria-hidden="true">{% translate language, "common", "Close" %}</button>
+            <button id="save_payconiq_settings" class="btn btn-primary" aria-hidden="true">{% translate language, "common", "Save" %}</button>
         </div>
     </div>
 </section>

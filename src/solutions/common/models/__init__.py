@@ -315,6 +315,9 @@ class SolutionSettings(SolutionIdentitySettings):
     # Branding
     events_branding_hash = db.StringProperty(indexed=False)
     loyalty_branding_hash = db.StringProperty(indexed=False)
+    
+    payment_enabled = db.BooleanProperty()
+    payment_optional = db.BooleanProperty()
 
     service_disabled = db.BooleanProperty(default=False)
 

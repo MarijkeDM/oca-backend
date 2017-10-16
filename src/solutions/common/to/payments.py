@@ -17,7 +17,11 @@
 
 import json
 
-from mcfw.properties import unicode_property
+from mcfw.properties import unicode_property, bool_property
+
+class PaymentSettingsTO(object):
+    enabled = bool_property('1')
+    optional = bool_property('2')
 
 
 class PayconiqProviderTO(object):

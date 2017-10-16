@@ -25,6 +25,17 @@ $(function () {
     var ordersDict = {};
     var orders = [];
     var showAllOrders = false;
+    
+    var paymentEnabled = false;
+    var paymentOptional = true;
+    
+    var TMPL_PAYMENT_ENABLED = '<div class="btn-group">'
+        + '      <button class="btn" id="paymentEnabledYes">&nbsp;</button>'
+        + '      <button class="btn btn-danger" id="paymentEnabledNo">' + CommonTranslations.DISABLED + '</button>' + '</div>';
+    
+    var TMPL_PAYMENT_OPTIONAL = '<div class="btn-group">'
+        + '      <button class="btn btn-success" id="paymentOptionalYes">' + CommonTranslations.Optional + '</button>'
+        + '      <button class="btn" id="paymentOptionalNo">&nbsp;</button>' + '</div>';
 
     var channelUpdates = function (data) {
         switch (data.type) {
@@ -439,6 +450,37 @@ $(function () {
         minuteStep: 5
     });
     
+    var loadPaymentSettings = function () {
+        sln.call({
+            url: "/common/payments/settings",
+            type: "GET",
+            success: function (data) {
+            	setPaymentEnabled(data.enabled);
+            	setPaymentOptional(data.optional);
+            },
+            error: sln.showAjaxError
+        });
+    };
+    
+    var savePaymentSettings = function () {
+    	sln.call({
+            url: "/common/payments/settings",
+            type: "POST",
+            data: {
+            	data: JSON.stringify({
+            		enabled: paymentEnabled,
+            		optional: paymentOptional
+                })
+            },
+            success: function (data) {
+                if (!data.success) {
+                    return sln.alert(data.errormsg, null, CommonTranslations.ERROR);
+                }
+            },
+            error: sln.showAjaxError
+        });
+    };
+    
     var loadPayconiq = function () {
         sln.call({
             url: "/common/payments/payconiq",
@@ -451,7 +493,7 @@ $(function () {
         });
     };
 
-    $("#payconiqSave").click(function () {
+    $("#save_payconiq_settings").click(function () {
     	sln.call({
             url: "/common/payments/payconiq",
             type: "POST",
@@ -466,15 +508,56 @@ $(function () {
                 if (!data.success) {
                     return sln.alert(data.errormsg, null, CommonTranslations.ERROR);
                 }
+                $("#payconiqSettingsModal").modal('hide');
             }
         });
     });
+    
+    function togglePaymentEnabled() {
+        setPaymentEnabled(!paymentEnabled);
+        savePaymentSettings();
+    }
+
+    function setPaymentEnabled(newPaymentEnabled) {
+    	paymentEnabled = newPaymentEnabled;
+        if (newPaymentEnabled) {
+            $('#paymentEnabledYes').addClass("btn-success").text(CommonTranslations.ENABLED);
+            $('#paymentEnabledNo').removeClass("btn-danger").html('&nbsp;');
+        } else {
+            $('#paymentEnabledYes').removeClass("btn-success").html('&nbsp;');
+            $('#paymentEnabledNo').addClass("btn-danger").text(CommonTranslations.DISABLED);
+        }
+    }
+    
+    function togglePaymentOptional() {
+        setPaymentOptional(!paymentOptional);
+        savePaymentSettings();
+    }
+
+    function setPaymentOptional(newPaymentOptional) {
+    	paymentOptional = newPaymentOptional;
+        if (newPaymentOptional) {
+            $('#paymentOptionalYes').addClass("btn-success").text(CommonTranslations.Optional);
+            $('#paymentOptionalNo').removeClass("btn-danger").html('&nbsp;');
+        } else {
+            $('#paymentOptionalYes').removeClass("btn-success").html('&nbsp;');
+            $('#paymentOptionalNo').addClass("btn-danger").text(CommonTranslations.REQUIRED_LOWER);
+        }
+    }
 
     sln.registerMsgCallback(channelUpdates);
     loadOrders();
     renderOrderSettings(orderSettings); // orderSettings defined in index.html
     updateShowHideOrders();
     loadPayconiq();
+    
+    $(".payment-enabled").html(TMPL_PAYMENT_ENABLED);
+    $(".payment-optional").html(TMPL_PAYMENT_OPTIONAL);
+    
+    $('#paymentEnabledYes').click(togglePaymentEnabled);
+    $('#paymentEnabledNo').click(togglePaymentEnabled);
+    $('#paymentOptionalYes').click(togglePaymentOptional);
+    $('#paymentOptionalNo').click(togglePaymentOptional);
 
     sln.registerInboxActionListener("order", function (chatId) {
         var o = solutionInboxMessageOrders[chatId];

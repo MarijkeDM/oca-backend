@@ -25,7 +25,31 @@ from rogerthat.rpc import users
 from rogerthat.rpc.service import ServiceApiException
 from rogerthat.service.api.payments import get_provider, put_provider
 from rogerthat.to import ReturnStatusTO
-from solutions.common.to.payments import PayconiqProviderTO
+from solutions.common.bizz.payment import get_payment_settings, save_payment_settings
+from solutions.common.to.payments import PaymentSettingsTO, PayconiqProviderTO
+
+
+@rest('/common/payments/settings', 'get', read_only_access=True, silent_result=True)
+@returns(PaymentSettingsTO)
+@arguments()
+def rest_get_payment_settings():
+    service_user = users.get_current_user()
+    to = PaymentSettingsTO()
+    to.enabled, to.optional = get_payment_settings(service_user)
+    return to
+
+
+@rest('/common/payments/settings', 'post')
+@returns(ReturnStatusTO)
+@arguments(enabled=bool, optional=bool)
+def rest_put_payment_settings(enabled, optional):
+    try:
+        service_user = users.get_current_user()
+        save_payment_settings(service_user, enabled, optional)
+        return ReturnStatusTO.create(True, None)
+    except ServiceApiException as e:
+        logging.exception(e)
+        return ReturnStatusTO.create(False, None)
 
 
 @rest('/common/payments/payconiq', 'get', read_only_access=True, silent_result=True)
@@ -40,7 +64,7 @@ def rest_get_payconiq_settings():
 @rest('/common/payments/payconiq', 'post')
 @returns(ReturnStatusTO)
 @arguments(merchant_id=unicode, jwt=unicode, online_key=unicode)
-def rest_put_news_item(merchant_id, jwt, online_key):
+def rest_put_payconiq_settings(merchant_id, jwt, online_key):
     service_identity = users.get_current_session().service_identity
 
     settings = {
