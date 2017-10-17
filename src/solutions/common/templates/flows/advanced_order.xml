@@ -392,12 +392,15 @@
 	                    }
                     }
 
-                    if (amount %lt;= 0) {
+                    if (amount &lt;= 0) {
                         return {outlet: 'flush_advanced_order_processing'};
                     }
+                    
+                    var amountStr = (amount / 100).toFixed(2);
 
                     var nextStepResult = {};
                     nextStepResult.outlet ='message_pay';
+                    nextStepResult.message = 'The total amount of this order is ' + amountStr + ' euro.';
                     nextStepResult.defaultValue = {
 			            'methods': [{
                             'provider_id': 'payconiq',
@@ -438,7 +441,7 @@
             exceptionReference="flowcode_calculate_payment">
             <outlet
                 name="flowcode_internet"
-                value="flowcode_internet"
+                value="{% if settings.payment_enabled %}flowcode_calculate_payment{% else %}flush_advanced_order_processing{% endif %}"
                 reference="{% if settings.payment_enabled %}flowcode_calculate_payment{% else %}flush_advanced_order_processing{% endif %}"/>
             <outlet
                 name="message_no_internet"
