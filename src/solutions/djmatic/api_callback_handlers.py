@@ -54,15 +54,21 @@ def invited(email, name, message, language, tag, origin, service_identity, user_
 @arguments(email=unicode, result=unicode, tag=unicode, origin=unicode, service_identity=unicode,
            user_details=[UserDetailsTO])
 def invite_result(email, result, tag, origin, service_identity, user_details):
-    try_or_defer(_process_invite_result, email, result, tag, origin, service_identity, user_details)
+    service_user = users.get_current_user()
+    try_or_defer(_process_invite_result, service_user, email, result, tag, origin, service_identity, user_details)
 
 
-def _process_invite_result(email, result, tag, origin, service_identity, user_details):
+def _process_invite_result(service_user, email, result, tag, origin, service_identity, user_details):
     if result == "accepted":
-        user_data = register_jukebox(users.get_current_user(), user_details[0])
-        try_or_defer(put_user_data, email, user_data, service_identity, user_details[0].app_id)
+        user_data = register_jukebox(service_user, user_details[0])
+        try_or_defer(_put_user_data, service_user, email, user_data, service_identity, user_details[0].app_id)
     if origin == "service_invite":
-        bulk_invite_result(users.get_current_user(), service_identity, tag, email, result, user_details)
+        bulk_invite_result(service_user, service_identity, tag, email, result, user_details)
+
+
+def _put_user_data(service_user, email, user_data, service_identity, app_id):
+    with users.set_user(service_user):
+        return put_user_data(email, user_data, service_identity, app_id)
 
 
 @service_api_callback_handler(solution=SOLUTION_DJMATIC, code=ServiceProfile.CALLBACK_MESSAGING_FLOW_MEMBER_RESULT)
@@ -103,13 +109,13 @@ def api_call(email, method, params, tag, service_identity, user_details):
             members.append(email)
 
             messaging.send(parent_key=None,
-                        parent_message_key=None,
-                        message=reminderMessage,
-                        answers=[],
-                        flags=Message.FLAG_ALLOW_DISMISS,
-                        members=members,
-                        branding=main_branding.branding_key,
-                        tag=None)
+                           parent_message_key=None,
+                           message=reminderMessage,
+                           answers=[],
+                           flags=Message.FLAG_ALLOW_DISMISS,
+                           members=members,
+                           branding=main_branding.branding_key,
+                           tag=None)
 
             r = SendApiCallCallbackResultTO()
             r.result = u"successfully reminded"
@@ -154,6 +160,7 @@ def messaging_form_update(status, form_result, answer_id, member, message_key, t
         return None
     return handler(users.get_current_user(), status, form_result, answer_id, member, message_key, tag,
                    received_timestamp, acked_timestamp, parent_message_key, result_key, service_identity, user_details)
+
 
 def wrap_common_callback_handler(f, code):
     return service_api_callback_handler(solution=SOLUTION_DJMATIC, code=code)(f)

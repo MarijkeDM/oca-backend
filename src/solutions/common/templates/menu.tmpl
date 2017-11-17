@@ -27,8 +27,8 @@
         }
     </style>
     <div id="menu_contents">
-        <button name="newcat" class="btn btn-success">{% translate language, "common", "menu-new-category" %}</button>
-        <button id="edit_menu_name" class="btn">{% translate language, "common", "edit-name" %}</button>
+        <button name="newcat" class="btn btn-success" disabled>{% translate language, "common", "menu-new-category" %}</button>
+        <button id="edit_menu_name" class="btn" disabled>{% translate language, "common", "edit-name" %}</button>
         <div id="menu_export_import" class="pull-right">
             <a href="/common/restaurant/menu/export" download class="btn">
                 {% translate language, "common", "export" %}

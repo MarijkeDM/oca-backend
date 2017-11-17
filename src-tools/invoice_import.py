@@ -26,12 +26,15 @@ CURRENCY_USD = 3
 CURRENCY = dict(EUR=CURRENCY_EUR, USD=CURRENCY_USD)
 FISCAL_POSITION_NATIONAL = 1
 FISCAL_POSITION_OUTSIDE_EUROPE = 2
+FISCAL_POSITION_INSIDE_EUROPE = 3
 OSA_JOURNAL = 9
 PAYMENT_TERM = 1
-ACCOUNT_ID_SALES_IN_BELGIUM = 816
+ACCOUNT_ID_SALES_IN_BELGIUM = 815
 ACCOUNT_ID_SALES_OUTSIDE_EUROPE = 817
+ACCOUNT_ID_SALES_INSIDE_EUROPE = 816
 TAX_RATE_SERVICES_BELGIUM = 1
 TAX_RATE_SERVICES_OUTSIDE_EUROPE = 13
+TAX_RATE_SERVICES_INSIDE_EUROPE = 10
 TOM_VAN_HECKE = 9
 
 def export_invoices(year, month):
@@ -128,7 +131,7 @@ def put_customer_in_odoo(ep_client, partner, customer, default_company, manager,
     partner_name = customer['name']
     vat = customer['vat']
     country_code = customer['country']
-    if country_code not in ('BE', 'CD'):
+    if country_code not in ('BE', 'CD', 'US', 'FR', 'ES'):
         raise Exception("Non BE customers ARE NOT SUPPORTED yet.")
     if odoo_customer is not None:
         update_odoo_object(odoo_customer, name=partner_name, street=address1, street2=address2, zip=zip_code,
@@ -183,10 +186,14 @@ def store_invoice(ep_client, osa_invoice, odoo_customer_id, default_company, pro
         fiscal_position = FISCAL_POSITION_NATIONAL
         account_id = ACCOUNT_ID_SALES_IN_BELGIUM
         tax_rate = TAX_RATE_SERVICES_BELGIUM
-    elif osa_invoice['customer']['country'] == 'CD':
+    elif osa_invoice['customer']['country'] in ('CD', 'US'):
         fiscal_position = FISCAL_POSITION_OUTSIDE_EUROPE
         account_id = ACCOUNT_ID_SALES_OUTSIDE_EUROPE
         tax_rate = TAX_RATE_SERVICES_OUTSIDE_EUROPE
+    elif osa_invoice['customer']['country'] in ('FR', 'ES'):
+        fiscal_position = FISCAL_POSITION_INSIDE_EUROPE
+        account_id = ACCOUNT_ID_SALES_INSIDE_EUROPE
+        tax_rate = TAX_RATE_SERVICES_INSIDE_EUROPE
     else:
         raise Exception("Oops, do not know what to do here ...")
     invoice_date = datetime.utcfromtimestamp(osa_invoice['date'])
@@ -215,8 +222,10 @@ def store_invoice(ep_client, osa_invoice, odoo_customer_id, default_company, pro
         invoice_line.create(data)
     client.execute('account.invoice', 'button_reset_taxes', odoo_invoice.id)
     odoo_invoice.refresh()
-    if int(odoo_invoice.amount_total * 100) != osa_invoice['total_amount']:
-        raise Exception('Total of invoice in Odoo does not match total of invoice in OSA')
+    odoo_amount = round(odoo_invoice.amount_total * 100)
+    osa_amount = osa_invoice['total_amount']
+    if odoo_amount != osa_amount and abs(int(odoo_amount) - osa_amount) > 1:
+        raise Exception('Total of invoice in Odoo (%s) does not match total of invoice in OSA (%s).' % (odoo_amount, osa_amount))
     # client.execute('account.invoice', 'invoice_validate', odoo_invoice.id)
     client.exec_workflow('account.invoice', 'invoice_open', odoo_invoice.id)
     odoo_invoice.refresh()

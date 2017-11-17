@@ -567,6 +567,10 @@ class CustomerSignup(db.Model):
     company_zip_code = db.StringProperty()
     company_city = db.StringProperty()
     company_vat = db.StringProperty()
+    company_email = db.StringProperty()
+    company_telephone = db.StringProperty()
+    company_website = db.StringProperty()
+    company_facebook_page = db.StringProperty()
 
     customer_name = db.StringProperty()
     customer_address1 = db.StringProperty()

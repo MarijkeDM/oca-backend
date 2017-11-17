@@ -96,6 +96,7 @@ $(function () {
 
     function renderOrderSettings(data) {
         $("#order_settings_text1").val(data.text_1);
+        $("#order_ready_default_message").val(data.order_ready_message);
         settingsSection.find('input[type=radio][value=' + data.order_type + ']').prop('checked', true);
         $('#order_leaptime').val(data.leap_time);
         $('#order_leaptime_type').val(data.leap_time_type);
@@ -107,10 +108,16 @@ $(function () {
             $('#order_timeframes_container').slideDown();
             $('#intro_text_container').slideUp();
         }
+        if (data.manual_confirmation) {
+            $('input[name=auto_or_manual_confirmation][value=manual]').prop('checked', true);
+        } else {
+            $('input[name=auto_or_manual_confirmation][value=automatic]').prop('checked', true);
+        }
     }
 
     function putOrderSettings() {
         var leapTime = parseInt($('#order_leaptime').val());
+        var confirmation = $('input[name=auto_or_manual_confirmation]:checked').val();
         if (isNaN(leapTime)) {
             leapTime = 60;
         }
@@ -123,7 +130,9 @@ $(function () {
                     text_1: $("#order_settings_text1").val(),
                     order_type: parseInt($('#section_settings_order').find('input[name=setting_advanced_order_fields]:checked').val()),
                     leap_time: leapTime,
-                    leap_time_type: leapTimeType
+                    leap_time_type: leapTimeType,
+                    order_ready_message: $('#order_ready_default_message').val().trim() || orderSettings.order_ready_message,
+                    manual_confirmation: confirmation === 'manual' ? true : false
                 })
             },
             success: function (data) {
@@ -138,6 +147,14 @@ $(function () {
         var toolbar = $('<div class="btn-toolbar"></div>');
         var group = $('<div class="btn-group"></div>');
 
+        if (order.status !== STATUS_COMPLETED && orderSettings.manual_confirmation) {
+            var btnConfirm = $('<button action="confirm" class="btn btn-large btn-primary"><i class="fa fa-reply"><i></button>')
+            btnConfirm.click(function(event) {
+                event.stopPropagation();
+                sendMessage(order, CommonTranslations.order_confirmed);
+            });
+            group.append(btnConfirm);
+        }
         if (order.status == STATUS_RECEIVED) {
             var btnReady = $('<button action="ready" class="btn btn-large btn-success"><i class="icon-ok icon-white"></i></button>').attr("order_key", order.key).click(
                 function(event) {
@@ -222,6 +239,29 @@ $(function () {
         sln.resize_header();
     };
 
+    var sendMessage = function(order, defaultMessage) {
+        sln.inputBox(function (message) {
+            sln.call({
+                url: "/common/order/sendmessage",
+                type: "POST",
+                data: {
+                    data: JSON.stringify({
+                        order_key: order.key,
+                        order_status: STATUS_RECEIVED,
+                        message: message
+                    })
+                },
+                success: function (data) {
+                    if (!data.success) {
+                        return sln.alert(data.errormsg, null, CommonTranslations.ERROR);
+                    }
+                }
+            });
+        }, CommonTranslations.REPLY, null,
+        CommonTranslations.REPLY_TO_MORE_INFO.replace("%(username)s", order.sender_name),
+        defaultMessage);
+    }
+
     var orderViewPressed = function (orderKey) {
         var order = ordersDict[orderKey];
         order.takeaway_time_formatted = sln.format(new Date(order.takeaway_time * 1000));
@@ -240,24 +280,11 @@ $(function () {
 
         $('button[action="sendmessage"]', html).click(function () {
             modal.modal('hide');
-            sln.inputBox(function (message) {
-                sln.call({
-                    url: "/common/order/sendmessage",
-                    type: "POST",
-                    data: {
-                        data: JSON.stringify({
-                            order_key: orderKey,
-                            order_status: STATUS_RECEIVED,
-                            message: message
-                        })
-                    },
-                    success: function (data) {
-                        if (!data.success) {
-                            return sln.alert(data.errormsg, null, CommonTranslations.ERROR);
-                        }
-                    }
-                });
-            }, CommonTranslations.REPLY, null, CommonTranslations.REPLY_TO_MORE_INFO.replace("%(username)s", order.sender_name));
+            var defaultMessage = null;
+            if (orderSettings.manual_confirmation) {
+                defaultMessage = CommonTranslations.order_confirmed;
+            }
+            sendMessage(order, defaultMessage);
         });
 
         if (order.status == STATUS_COMPLETED) {
@@ -292,7 +319,7 @@ $(function () {
                     }
                 }
             });
-        }, CommonTranslations.READY, CommonTranslations.READY, null, CommonTranslations.REPLY_ORDER_READY, null, CommonTranslations.dont_send_message);
+        }, CommonTranslations.READY, CommonTranslations.READY, null, orderSettings.order_ready_message, null, CommonTranslations.dont_send_message);
     };
 
     var orderDeletePressed = function (event) {
@@ -570,4 +597,6 @@ $(function () {
     sln.configureDelayedInput($("#order_settings_text1"), putOrderSettings);
     sln.configureDelayedInput($("#order_leaptime"), putOrderSettings);
     sln.configureDelayedInput($("#order_leaptime_type"), putOrderSettings);
+    sln.configureDelayedInput($("#order_ready_default_message"), putOrderSettings);
+
 });

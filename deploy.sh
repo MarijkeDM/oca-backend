@@ -17,7 +17,7 @@ NO_COLOR="\n\033[0m"
 
 pushd ${CUR_DIR}
 
-bash install.sh --online
+bash install.sh
 
 if [ ${deploy_type} = "google" ]; then
     echo -e "${LOG_COLOR}* Deploying to Google Cloud${NO_COLOR}"

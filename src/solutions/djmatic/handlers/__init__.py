@@ -81,7 +81,7 @@ class DJMaticHomeHandler(webapp2.RequestHandler):
         for tmpl in ('menu_additem', 'menu', 'menu_editdescription', 'menu_edit_image', 'holiday_holiday',
                      'inbox_messages', 'inbox_detail_messages',
                      'events_add', 'events_add_dates', 'events', 'events_events', 'events_settings', 'events_calendar_settings', 'events_guests_modal',
-                     'events_guests_table',
+                     'events_guests_table', 'events_uitcalendar_settings',
                      'broadcast_types', 'broadcast_schedule', 'broadcast_schedule_items', 'addattachment',
                      'settings/try_publish_changes', 'settings/settings_branding', 'settings/settings_branding_preview', 'settings/upload_image'):
             templates[tmpl] = JINJA_ENVIRONMENT.get_template(tmpl + '.html').render(tmpl_params)

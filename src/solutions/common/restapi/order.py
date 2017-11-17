@@ -45,10 +45,13 @@ def order_settings_load():
     sln_order_settings = get_solution_order_settings(sln_settings)
     return SolutionOrderSettingsTO.fromModel(sln_order_settings, sln_settings.main_language)
 
+
 @rest("/common/order/settings/put", "post")
 @returns(ReturnStatusTO)
-@arguments(text_1=unicode, order_type=int, leap_time=int, leap_time_type=int)
-def put_order_settings(text_1, order_type, leap_time=15, leap_time_type=SECONDS_IN_MINUTE):
+@arguments(text_1=unicode, order_ready_message=unicode, manual_confirmation=bool, order_type=int, leap_time=int,
+           leap_time_type=int)
+def put_order_settings(text_1, order_ready_message, manual_confirmation, order_type, leap_time=15,
+                       leap_time_type=SECONDS_IN_MINUTE):
     service_user = users.get_current_user()
     if leap_time_type not in [SECONDS_IN_MINUTE, SECONDS_IN_HOUR, SECONDS_IN_DAY, SECONDS_IN_WEEK]:
         leap_time_type = SECONDS_IN_MINUTE
@@ -61,6 +64,8 @@ def put_order_settings(text_1, order_type, leap_time=15, leap_time_type=SECONDS_
         sln_order_settings.order_type = order_type
         sln_order_settings.leap_time = leap_time
         sln_order_settings.leap_time_type = leap_time_type
+        sln_order_settings.order_ready_message = order_ready_message
+        sln_order_settings.manual_confirmation = manual_confirmation
         sln_order_settings.put()
 
         sln_settings = get_solution_settings(service_user)

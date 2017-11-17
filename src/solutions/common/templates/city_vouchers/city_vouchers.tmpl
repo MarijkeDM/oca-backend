@@ -9,8 +9,8 @@
 
         <section id="city_vouchers-search">
             <div class="input-prepend input-append">
-                <span class="add-on">Zoeken</span>
-                <input class="span6" id="city_vouchers-search_input" type="text" placeholder="Invoeren…" autofocus="">
+                <span class="add-on">{% translate language, "common", "Search" %}</span>
+                <input class="span6" id="city_vouchers-search_input" type="text" placeholder="{% translate language, "common", "enter-dot-dot-dot" %}" autofocus="">
             </div>
             <div id="city_vouchers-search_results" style="display: none;">
                 <table class="table table-striped table-bordered">
@@ -22,7 +22,7 @@
                 </div>
             </div>
         </section>
-        
+
         <section id="city_vouchers-qrcode_export" style="display: none;">
             <button class="addqrcodes btn btn-primary">{% translate language, "common", "Create 100 QR Codes" %}</button>
             <br> <br>
@@ -30,21 +30,21 @@
                 <tbody>
                 </tbody>
             </table>
-            
+
             <div class="text-center">
                 <img class="load-more" src="/static/images/ajax-loader.gif">
             </div>
         </section>
-        
+
         <section id="city_vouchers-export" style="display: none;">
             <br> <br>
             <div id="city_vouchers-export_data" class="clearfix"></div>
-            
+
             <div class="text-center">
                 <img class="load-more" src="/static/images/ajax-loader.gif">
             </div>
         </section>
     </div>
-    
+
 </div>
  <script src="/static/js/solutions/sln-city_vouchers.js"></script>

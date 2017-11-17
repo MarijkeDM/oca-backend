@@ -355,3 +355,28 @@ $(document).on("focusout", ".scroll-input-couple", function(event){
 	var originalOffset = $("#couple-qr-code-popup").data("original_offset");
 	$("#couple-qr-code-popup-popup").css("top", originalOffset.top);
 });
+
+
+var hidePopup = function(popupId, callback) {
+    console.log('hiding popup:', popupId);
+    var popupElem = $('#main #' + popupId);
+    if (typeof callback === 'function') {
+        popupElem.on('popupafterclose', function() {
+            popupElem.off('popupafterclose');
+            setTimeout(callback, 10);
+        });
+    }
+    popupElem.popup('close');
+    if (shouldDoubleClose) {
+       popupElem.popup('close');
+    }
+}
+
+var showPopup = function(popupId, callback) {
+   console.log('showing popup:', popupId);
+   var popupElem = $('#main #' + popupId);
+   if(typeof callback === 'function') {
+       callback.bind(popupElem)();
+   }
+   popupElem.popup('open', { positionTo: 'window' });
+}

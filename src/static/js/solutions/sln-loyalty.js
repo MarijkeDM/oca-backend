@@ -1358,10 +1358,7 @@ $(function() {
                 }
                 // will be added or removed by the channel update
             },
-            error: function() {
-                sln.hideProcessing();
-                sln.showAjaxError();
-            }
+            error: sln.showAjaxError
         });
     }
 

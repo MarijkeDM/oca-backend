@@ -17,10 +17,14 @@
  */
 
 $(function() {
-	var voucherBackup = {has_more: false};
+    // should create a widget for the data list with auto loading on scroll?
+    var voucherBackup = {
+        has_more: false,
+        prev_cursor: null
+    };
     var qrCodeExportBackup = {};
     var exportBackup = {};
-    
+
     var renderVouchers = function() {
         var html = $.tmpl(templates['city_vouchers/city_vouchers_list'], {
             vouchers : voucherBackup.vouchers,
@@ -36,13 +40,19 @@ $(function() {
         $("#city_vouchers #city_vouchers-search .load-more").toggle(voucherBackup.has_more);
         $('#city_vouchers #city_vouchers-search button[action="voucherHistory"]').click(voucherHistory);
     };
-        
+
     var loadSearchVouchers = function(cursor) {
         if (cursor == null) {
             voucherBackup.cursor = null;
             voucherBackup.has_more = false;
             voucherBackup.vouchers = [];
             voucherBackup.loading = true;
+        }
+
+        if(voucherBackup.cursor && voucherBackup.cursor === voucherBackup.prev_cursor) {
+            return;
+        } else {
+            voucherBackup.prev_cursor = cursor;
         }
         var params = {
             app_id: CITY_APP_ID,
@@ -57,24 +67,36 @@ $(function() {
                 voucherBackup.cursor = data.cursor;
                 voucherBackup.has_more = data.has_more;
                 voucherBackup.loading = false;
+                $.each(data.vouchers, function(i, voucher) {
+                    voucher.expiration_date = sln.formatDate(voucher.expiration_date, false, false, false);
+                });
                 voucherBackup.vouchers.push.apply(voucherBackup.vouchers, data.vouchers);
                 $("#city_vouchers-search_results").show();
                 renderVouchers();
                 validateLoadMore();
             }
-        });  
+        });
     };
-    
+
+    var clearSearchResults = function() {
+        voucherBackup.vouchers = [];
+        renderVouchers();
+    };
+
     sln.configureDelayedInput($('#city_vouchers-search_input'), function(query) {
-        voucherBackup.query = query;
-        loadSearchVouchers(null);
+        if (query) {
+            voucherBackup.query = query;
+            loadSearchVouchers(null);
+        } else {
+            clearSearchResults();
+        }
     });
-    
+
     var renderQRCodesExport = function() {
         $.each(qrCodeExportBackup.data, function(i, qrcode_export) {
             qrcode_export.date = sln.formatDate(qrcode_export.created, true, false, false);
         });
-        
+
         var html = $.tmpl(templates['city_vouchers/city_vouchers_qrcode_export_list'], {
             data : qrCodeExportBackup.data,
             CommonTranslations : CommonTranslations
@@ -88,7 +110,7 @@ $(function() {
         }
         $("#city_vouchers #city_vouchers-qrcode_export .load-more").toggle(qrCodeExportBackup.has_more);
     };
-    
+
     var loadQRCodeExports = function(cursor) {
         if (cursor == null) {
             qrCodeExportBackup.cursor = null;
@@ -109,9 +131,9 @@ $(function() {
                 renderQRCodesExport();
                 validateLoadMore();
             }
-        });  
+        });
     };
-    
+
     var renderExport = function() {
     	var html = $.tmpl(templates['city_vouchers/city_vouchers_export_list'], {
             exports: exportBackup.data,
@@ -121,7 +143,7 @@ $(function() {
         $('#city_vouchers-export_data').html(html).show();
         $("#city_vouchers #city_vouchers-export .load-more").toggle(exportBackup.has_more);
     };
-    
+
     var loadExports = function(cursor) {
     	if (cursor == null) {
             exportBackup.cursor = null;
@@ -142,9 +164,9 @@ $(function() {
                 renderExport();
                 validateLoadMore();
             }
-        });  
+        });
     };
-    
+
     $(".addqrcodes").click(function() {
         sln.showProcessing(CommonTranslations.SAVING_DOT_DOT_DOT);
         sln.call({
@@ -166,7 +188,7 @@ $(function() {
             error : sln.showAjaxError
         });
     });
-    
+
     var voucherHistory = function() {
         var voucher_id = parseInt($(this).attr("voucher_id"));
         var params = {app_id: CITY_APP_ID, voucher_id: voucher_id};
@@ -176,7 +198,7 @@ $(function() {
             data : params,
             success : function(data) {
             	data.amount = CURRENCY + " " + ((data.value - data.redeemed_value) / 100).toFixed(2);
-            	
+
                 $.each(data.transactions, function(i, transaction) {
                     transaction.date = sln.formatDate(transaction.created, true, false, false);
                     transaction.amount = "";
@@ -194,13 +216,53 @@ $(function() {
             }
         });
     };
-    
+
+    $(document).on('input', '#vouchers_validity', function() {
+        var disabled = !$(this).val().trim();
+        $('#save_vouchers_validity').attr('disabled', disabled);
+    });
+
+    var saveVouchersValidity = function(unlimited) {
+        var validity;
+        if (unlimited) {
+            validity = null;
+        } else {
+            validity = parseInt($('#vouchers_validity').val());
+        }
+        sln.call({
+            url: '/common/vouchers/validity/put',
+            type: 'post',
+            showProcessing: true,
+            data: {
+                app_id: CITY_APP_ID,
+                validity: validity
+            },
+            success: function(result) {
+                if(!result.success) {
+                    sln.alert(CommonTranslations[result.errormsg]);
+                }
+            },
+            error: sln.showAjaxError
+        });
+    };
+    $(document).on('click', '#save_vouchers_validity', function() {
+        saveVouchersValidity(false);
+    });
+
+    var checkVouchersValdity = function() {
+        var unlimited = $('#vouchers_validity_unlimited').is(':checked');
+        $('#vouchers_validity').attr('disabled', unlimited);
+        $('#save_vouchers_validity').attr('disabled', unlimited);
+        saveVouchersValidity(unlimited);
+    };
+    $(document).on('click', '#vouchers_validity_unlimited', checkVouchersValdity);
+
     var cityVouchersMenuItem = $('#topmenu').find('li[menu=city_vouchers]');
     var validateLoadMore = function() {
         if (!cityVouchersMenuItem.hasClass('active')) {
             return;
         }
-        
+
         var id_ = $("#city_vouchers-tab").find(".nav li.active").attr("section");
         if(id_ === "city_vouchers-search") {
             if (!sln.isOnScreen($("#city_vouchers #city_vouchers-search").find("table tr:last"))) {
@@ -225,21 +287,21 @@ $(function() {
             }
         }
     };
-    
+
     $(window).scroll(function() {
         validateLoadMore();
     });
 
     loadQRCodeExports(null);
     loadExports(null);
-    
+
     $("#city_vouchers-tab").find(".nav li a").on("click", function () {
         $("#city_vouchers-tab").find(".nav li").removeClass("active");
         var li = $(this).parent().addClass("active");
         $("#city_vouchers-tab").find("section").hide();
         $("#city_vouchers-tab").find("section#" + li.attr("section")).show();
     });
-    
+
     var channelUpdates = function(data) {
         if (data.type == 'solutions.common.city.vouchers.qrcode_export.updated') {
             loadQRCodeExports(null);

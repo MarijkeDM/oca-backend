@@ -6,7 +6,7 @@
         <end id="end_advanced_order"
              waitForFollowUpMessage="false"/>
         <end id="end_processing"
-             waitForFollowUpMessage="true"/>
+             waitForFollowUpMessage="{% if manual_confirmation %}false{% else %}true{% endif %}"/>
 
         <!-- BEGIN TODO: make re-usable -->
         <flowCode
@@ -280,7 +280,7 @@
             </form>
         </formMessage>
         <resultsFlush id="flush_advanced_order_processing"
-                      reference="end_processing"/>
+                      reference="message_order_sent"/>
         <flowCode
                 id="flowcode_set_datetime_step"
                 exceptionReference="message_takeaway_time">
@@ -456,6 +456,24 @@
                 };
             </javascriptCode>
         </flowCode>
+
+        <message
+            id="message_order_sent"
+            alertIntervalType="NONE"
+            alertType="SILENT"
+            brandingKey="{{ branding_key }}"
+            allowDismiss="true"
+            vibrate="false"
+            dismissReference="end_processing"
+            autoLock="true">
+            <content>
+                {%- if manual_confirmation -%}
+                    {% translate language, 'common', 'order-flow-manual-confirm', 'name=' + settings.name %}
+                {%- else -%}
+                    {% translate language, 'common', 'order-flow-tnx' %}
+                {%- endif -%}
+            </content>
+        </message>
 
         <message
             brandingKey="{{ branding_key }}"

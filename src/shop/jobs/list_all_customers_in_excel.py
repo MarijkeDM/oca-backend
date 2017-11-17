@@ -15,19 +15,18 @@
 #
 # @@license_version:1.2@@
 
-import datetime
+import base64
 from collections import defaultdict
-from email.mime.application import MIMEApplication
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+import datetime
 
-import xlwt
 from babel.dates import format_datetime
 
 from rogerthat.settings import get_server_settings
 from rogerthat.translations import DEFAULT_LANGUAGE
-from rogerthat.utils import send_mail_via_mime
+from rogerthat.utils import send_mail
 from shop.models import Customer
+import xlwt
+
 
 try:
     from cStringIO import StringIO
@@ -59,17 +58,11 @@ def job():
 
     current_date = format_datetime(datetime.datetime.now(), locale=DEFAULT_LANGUAGE)
     to_emails = [u'lucas@mobicage.com', u'tom@mobicage.com', u'gert@mobicage.com']
-    msg = MIMEMultipart('mixed')
-    msg['Subject'] = 'List of all customers'
-    msg['From'] = 'export@mobicage.com'
-    msg['To'] = ','.join(to_emails)
-    msg["Reply-To"] = 'noreply@mobicage.com'
-    body = MIMEText('See attachment.', 'plain', 'utf-8')
-    msg.attach(body)
+    
+    attachments = []
+    attachments.append(('Customers %s.xls' % current_date,
+                        base64.b64encode(excel_string)))
 
-    att = MIMEApplication(excel_string, _subtype='vnd.ms-excel')
-    att.add_header('Content-Disposition', 'attachment',
-                   filename='Customers %s.xls' % current_date)
-    msg.attach(att)
-
-    send_mail_via_mime(settings.senderEmail, to_emails, msg)
+    subject = 'List of all customers'
+    message = 'See attachment.'
+    send_mail('export@mobicage.com', to_emails, subject, message, attachments=attachments)

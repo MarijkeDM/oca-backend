@@ -54,12 +54,12 @@ var showActivateVoucherPopupOverlay = function() {
 	console.log("showActivateVoucherPopupOverlay");
     var activatePopup = $("#main #activate-voucher-popup");
     activatePopup.find(".uid").text("(" + currentScannedInfo.uid + ")");
-    
+
     activatePopup.find("#av-value").val("");
     activatePopup.find("#av-internal-account").val("");
     activatePopup.find("#av-cost-center").val("");
     activatePopup.find(".error_msg").hide();
-    
+
     activatePopup.popup("open", {positionTo: 'window'});
 };
 
@@ -80,7 +80,7 @@ var showRedeemVoucherPopupOverlay = function() {
     console.log("showRedeemVoucherPopupOverlay");
     var redeemPopup = $("#main #redeem-voucher-popup");
     redeemPopup.find(".uid").text("(" + currentScannedInfo.uid + ")");
-    
+
 	var valueLeft = currentScannedInfo.value - currentScannedInfo.redeemed_value;
 	if (valueLeft > 0) {
 		$('#redeem-voucher-popup .calculator').show()
@@ -93,7 +93,7 @@ var showRedeemVoucherPopupOverlay = function() {
 	calculatorDecimalAdded = false;
 	redeemPopup.find('.calculator .screen').text('');
 	redeemPopup.find(".error_msg").hide();
-    	
+
     redeemPopup.popup("open", {positionTo: 'window'});
 };
 
@@ -122,11 +122,11 @@ var showConfirmRedeemVoucherPopupOverlay = function() {
 $(document).on("touchend click", ".closePinActivateVoucherPopup", function(event) {
     event.stopPropagation();
     event.preventDefault();
-    
+
     var selected = $(this).attr("pinAction");
     if (selected == "submit") {
     	var pin = $('#main #pin-activate-voucher-popup .calculator .screen').data("pin");
-    	
+
     	solutionsVoucherPinActivateGuid = rogerthat.util.uuid();
         var tag = solutionsVoucherPinActivateGuid;
         rogerthat.api.call("solutions.voucher.activate.pin",
@@ -137,10 +137,10 @@ $(document).on("touchend click", ".closePinActivateVoucherPopup", function(event
        			 	'pin': pin
         		}),
         		tag);
-        
+
         hidePinActivateVoucherPopupOverlay();
         showLoading(Translations.VALIDATING);
-        
+
         setTimeout(function(){
             if (tag == solutionsVoucherPinActivateGuid) {
                 console.log("solutions.voucher.activate.pin timeout");
@@ -149,7 +149,7 @@ $(document).on("touchend click", ".closePinActivateVoucherPopup", function(event
                 showErrorPopupOverlay(Translations.INTERNET_SLOW_RETRY);
             }
         }, 15000);
-        
+
     } else {
     	hidePinActivateVoucherPopupOverlay(startScanningForQRCode);
     }
@@ -169,33 +169,33 @@ $(document).on("touchend click", "#main #pin-activate-voucher-popup .calculator 
     		var pin = input.data("pin");
     		input.data("pin", pin + btnVal)
     		input.text(input.text() + "*");
-    	} 
+    	}
     }
 });
 
 $(document).on("touchend click", ".closeActivateVoucherPopup", function(event) {
     event.stopPropagation();
     event.preventDefault();
-    
+
     var selected = $(this).attr("activateAction");
     console.log("closeActivateVoucherPopup selected: " + selected);
     if (selected == "submit") {
     	var activatePopup = $("#main #activate-voucher-popup");
-    	
+
     	var avInternalAccount = activatePopup.find('#av-internal-account');
     	if (avInternalAccount.val().trim() == "") {
     		activatePopup.find(".error_msg").text(Translations.REQUIRED_FIELDS_MISSING);
     		activatePopup.find(".error_msg").show();
             return;
     	}
-    	
+
     	var avCostCenter = activatePopup.find('#av-cost-center');
     	if (avCostCenter.val().trim() == "") {
     		activatePopup.find(".error_msg").text(Translations.REQUIRED_FIELDS_MISSING);
     		activatePopup.find(".error_msg").show();
             return;
     	}
-        
+
     	var avValue = activatePopup.find('#av-value');
     	var priceFloat = parseFloat(avValue.val());
         if(isNaN(priceFloat)) {
@@ -203,38 +203,66 @@ $(document).on("touchend click", ".closeActivateVoucherPopup", function(event) {
             activatePopup.find(".error_msg").show();
             return;
         }
-    	var amount = Math.round(priceFloat * 100);
-    	
-        solutionsVoucherActivateGuid = rogerthat.util.uuid();
-        var tag = solutionsVoucherActivateGuid;
-        rogerthat.api.call("solutions.voucher.activate",
-        		JSON.stringify({
-        			'timestamp': Math.floor(Date.now() / 1000),
-        			'app_id': currentScannedInfo.app_id,
-        			'voucher_id': currentScannedInfo.voucher_id,
-        			'username': currentScannedInfo.username,
-       			 	'internal_account': avInternalAccount.val().trim(),
-       			 	'cost_center': avCostCenter.val().trim(),
-       			 	'value': amount
-        		}),
-        		tag);
-        
-        hideActivateVoucherPopupOverlay();
-        showLoading(Translations.SAVING_DOT_DOT_DOT);
-        
-        setTimeout(function(){
-            if (tag == solutionsVoucherActivateGuid) {
-                console.log("solutions.voucher.activate timeout");
-                solutionsVoucherActivateGuid = null;
-                hideLoading();
-                showErrorPopupOverlay(Translations.INTERNET_SLOW_CONTINUE);
-            }
-        }, 15000);
-    	
+
+        voucherActivationData = {
+            voucher_scan: $.extend({}, currentScannedInfo),
+            internal_account: avInternalAccount.val().trim(),
+            cost_center: avCostCenter.val().trim(),
+            amount: Math.round(priceFloat * 100)
+        }
+
+        hideActivateVoucherPopupOverlay(function() {
+            showPopup('link-voucher-to-user');
+        });
+
     } else {
     	hideActivateVoucherPopupOverlay(startScanningForQRCode);
     }
 });
+
+$(document).on('touched click', '#main #link-voucher-to-user .closeLinkVoucherPopup', function(event) {
+    event.stopPropagation();
+    event.preventDefault();
+
+    var selected = $(this).attr("linkAction");
+    if (selected === 'submit') {
+        voucherUserLink = true;
+        hidePopup('link-voucher-to-user', startScanningForQRCode);
+    } else {
+        voucherUserLink = false;
+        hidePopup('link-voucher-to-user', function() {
+            activateVoucher(voucherActivationData, null);
+        });
+    }
+});
+
+var activateVoucher = function(data, userDetails) {
+    solutionsVoucherActivateGuid = rogerthat.util.uuid();
+    var tag = solutionsVoucherActivateGuid;
+    rogerthat.api.call("solutions.voucher.activate",
+            JSON.stringify({
+                'timestamp': Math.floor(Date.now() / 1000),
+                'app_id': data.voucher_scan.app_id,
+                'voucher_id': data.voucher_scan.voucher_id,
+                'username': data.voucher_scan.username,
+                'internal_account': data.internal_account,
+                'cost_center': data.cost_center,
+                'value': data.amount,
+                'app_user_details': userDetails,
+            }),
+            tag);
+
+    showLoading(Translations.SAVING_DOT_DOT_DOT);
+    setTimeout(function(){
+        if (tag == solutionsVoucherActivateGuid) {
+            console.log("solutions.voucher.activate timeout");
+            solutionsVoucherActivateGuid = null;
+            hideLoading();
+            showErrorPopupOverlay(Translations.INTERNET_SLOW_CONTINUE);
+        }
+    }, 15000);
+    voucherUserLink = false;
+};
 
 $(document).on("touchend click", "#main #redeem-voucher-popup .calculator span", function(event) {
     event.stopPropagation();
@@ -258,13 +286,13 @@ $(document).on("touchend click", "#main #redeem-voucher-popup .calculator span",
 $(document).on("touchend click", ".closeRedeemVoucherPopup", function(event) {
     event.stopPropagation();
     event.preventDefault();
-    
+
     var selected = $(this).attr("redeemAction");
     console.log("closeRedeemVoucherPopup selected: " + selected);
     if (selected == "submit") {
     	var priceText = $('#main #redeem-voucher-popup .calculator .screen').text();
         var priceFloat = parseFloat(priceText);
-        
+
         if(isNaN(priceFloat)) {
             $("#main #redeem-voucher-popup .error_msg").text(Translations.PRICE_IS_NOT_A_NUMBER)
                 .show();
@@ -275,20 +303,20 @@ $(document).on("touchend click", ".closeRedeemVoucherPopup", function(event) {
         	$("#main #redeem-voucher-popup .error_msg").text(Translations.MINIMUM + ": 0.01").show();
             return;
         }
-        
+
         var valueLeft = currentScannedInfo.value - currentScannedInfo.redeemed_value;
         if (value > valueLeft) {
         	$("#main #redeem-voucher-popup .error_msg").text(Translations.MAXIMUM + ": " + (valueLeft / 100).toFixed(2))
             	.show();
             return;
         }
-        
+
     	hideRedeemVoucherPopupOverlay();
         showLoading(Translations.REDEEMING_VOUCHER);
         solutionsVoucherRedeemGuid = rogerthat.util.uuid();
         var tag = solutionsVoucherRedeemGuid;
-        
-        rogerthat.api.call("solutions.voucher.redeem", 
+
+        rogerthat.api.call("solutions.voucher.redeem",
                            JSON.stringify({
                         	   'timestamp': Math.floor(Date.now() / 1000),
                    			   'app_id': currentScannedInfo.app_id,
@@ -296,7 +324,7 @@ $(document).on("touchend click", ".closeRedeemVoucherPopup", function(event) {
                    			   'value': value
                             }),
                             tag);
-        
+
         setTimeout(function(){
             if (tag == solutionsVoucherRedeemGuid) {
                 console.log("solutions.voucher.redeem timeout");
@@ -305,7 +333,7 @@ $(document).on("touchend click", ".closeRedeemVoucherPopup", function(event) {
                 showErrorPopupOverlay(Translations.INTERNET_SLOW_RETRY);
             }
         }, 15000);
-        
+
     } else {
     	hideRedeemVoucherPopupOverlay(startScanningForQRCode);
     }
@@ -321,14 +349,14 @@ $(document).on("touchend click", ".closeConfirmRedeemVoucherPopup", function(eve
     	showLoading(Translations.SAVING_DOT_DOT_DOT);
     	solutionsVoucherConfirmRedeemGuid = rogerthat.util.uuid();
         var tag = solutionsVoucherConfirmRedeemGuid;
-        
-        rogerthat.api.call("solutions.voucher.redeem.confirm", 
+
+        rogerthat.api.call("solutions.voucher.redeem.confirm",
                            JSON.stringify({
                         	   'timestamp': Math.floor(Date.now() / 1000),
                    			   'voucher_redeem_key': currentScannedInfo.voucher_redeem_key
                             }),
                             tag);
-        
+
         setTimeout(function(){
             if (tag == solutionsVoucherConfirmRedeemGuid) {
                 console.log("solutions.voucher.redeem.confirm timeout");

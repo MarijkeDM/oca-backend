@@ -612,7 +612,7 @@ $(function() {
     };
 
     var renderCalendarSettings = function() {
-        var menuHtmlElement = $("#section_settings_agenda table tbody");
+        var menuHtmlElement = $("#section_settings_agenda_calendars tbody");
         menuHtmlElement.empty();
 
         var html = $.tmpl(templates.events_settings, {
@@ -623,11 +623,11 @@ $(function() {
         });
 
         menuHtmlElement.append(html);
-        $('#section_settings_agenda table tbody button[action="editCalendar"]').click(editCalendar);
-        $('#section_settings_agenda table tbody button[action="adminCalendar"]').click(function() {
+        $('#section_settings_agenda_calendars tbody button[action="editCalendar"]').click(editCalendar);
+        $('#section_settings_agenda_calendars tbody button[action="adminCalendar"]').click(function() {
             renderCalendarSettingsDetail(parseInt($(this).attr("calendar_id")));
         });
-        $('#section_settings_agenda table tbody button[action="deleteCalendar"]').click(deleteCalendar);
+        $('#section_settings_agenda_calendars tbody button[action="deleteCalendar"]').click(deleteCalendar);
 
         if (currentSettingsCalendarId) {
             loadCalendarAdmins();

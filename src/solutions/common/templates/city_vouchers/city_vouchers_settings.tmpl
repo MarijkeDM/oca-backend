@@ -1,0 +1,16 @@
+<section id="section_settings_city_vouchers" style="display: none;">
+    <legend>
+        {% translate language, "common", "validity_period" %}
+        ({% translate language, "common", "in_months" %})
+    </legend>
+    <label class="checkbox">
+        <input id="vouchers_validity_unlimited" type="checkbox" {% if not vouchers_settings.validity %}checked{% endif %}/>
+        {% translate language, "common", "unlimited_validity" %}
+    </label>
+    <div>
+        <input id="vouchers_validity" type="number" min="1" max="96" value="{{ vouchers_settings.validity or 12 }}" {% if not vouchers_settings.validity %}disabled{% endif %}/>
+    </div>
+    <button id="save_vouchers_validity" type="button" class="btn btn-success" {% if not vouchers_settings.validity %}disabled{% endif %}>
+        {% translate language, "common", "Save" %}
+    </button>
+</section>

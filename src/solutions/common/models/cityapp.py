@@ -31,7 +31,8 @@ class CityAppProfile(db.Model):
     uitdatabank_enabled = db.BooleanProperty(indexed=True, default=False)
     uitdatabank_secret = db.StringProperty(indexed=False)
     uitdatabank_key = db.StringProperty(indexed=False)
-    uitdatabank_region = db.StringProperty(indexed=False)
+    uitdatabank_region = db.StringProperty(indexed=False) # deprecated since we allow multiple regions
+    uitdatabank_regions = db.StringListProperty(indexed=False)
 
     # Run params in cron of CityAppSolutionGatherEvents
     gather_events_enabled = db.BooleanProperty(indexed=False, default=False)

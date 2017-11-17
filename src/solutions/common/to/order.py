@@ -15,7 +15,7 @@
 #
 # @@license_version:1.2@@
 
-from mcfw.properties import unicode_property, long_property
+from mcfw.properties import bool_property, long_property, unicode_property
 from solutions import translate as common_translate
 from solutions.common import SOLUTION_COMMON
 from solutions.common.consts import SECONDS_IN_MINUTE
@@ -27,7 +27,8 @@ class SolutionOrderSettingsTO(object):
     order_type = long_property('2')
     leap_time = long_property('3')
     leap_time_type = long_property('4')
-
+    order_ready_message = unicode_property('5')
+    manual_confirmation = bool_property('6', default=False)
 
     @staticmethod
     def fromModel(obj, language):
@@ -40,6 +41,8 @@ class SolutionOrderSettingsTO(object):
             to.order_type = obj.order_type
             to.leap_time = obj.leap_time
             to.leap_time_type = obj.leap_time_type
+            to.order_ready_message = obj.order_ready_message
+            to.manual_confirmation = obj.manual_confirmation
         else:
             to.order_type = SolutionOrderSettings.DEFAULT_ORDER_TYPE
             to.leap_time = 15
@@ -48,7 +51,10 @@ class SolutionOrderSettingsTO(object):
             text_1 = common_translate(language, SOLUTION_COMMON, 'order-flow-details')
 
         to.text_1 = text_1
+        if not to.order_ready_message:
+            to.order_ready_message = common_translate(language, SOLUTION_COMMON, 'order-ready')
         return to
+
 
 class SolutionOrderTO(object):
     key = unicode_property('1')

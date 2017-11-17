@@ -8,10 +8,20 @@
         		<span class="label"style="margin-right: 10px;" >${CommonTranslations.REDEEMED}</span>
         	{{else}}
             	{{if voucher.activated }}
-	            	<p><span class="label label-success">${CommonTranslations.ENABLED}</span></p>
+                    <p>
+                        {{if voucher.expired}}
+                            <span class="label label-warning">${CommonTranslations.expired}: ${voucher.expiration_date}</span>
+                            <strong><span>${CommonTranslations['Remaining value']}: ${CURRENCY} ${((voucher.value - voucher.redeemed_value) / 100.0).toFixed(2)}</span></strong>
+                            {{if voucher.owner_name}}
+                                <span>(${voucher.owner_name})</span>
+                            {{/if}}
+                        {{else}}
+                            <span class="label label-success">${CommonTranslations.ENABLED}</span>
+                        {{/if}}
+                    </p>
 	         	{{else}}
 	            	<p><span class="label">${CommonTranslations.DISABLED}</span></p>
-	         	{{/if}}
+                {{/if}}
 	        {{/if}}
         </div>
         <div class="span2">

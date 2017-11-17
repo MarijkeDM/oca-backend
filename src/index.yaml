@@ -849,3 +849,9 @@ indexes:
   - name: service_disabled_at
   - name: organization_type
   - name: name
+
+- kind: SolutionCityVoucher
+  ancestor: yes
+  properties:
+  - name: expiration_date
+    direction: desc

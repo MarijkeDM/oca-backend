@@ -1,18 +1,30 @@
+{% raw %}
 <div class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="uploadImageLabel" style="min-width: 660px;">
-    <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal">&times;</button>
-        <h3 id="uploadImageLabel">${header}</h3>
-    </div>
-    <div class="modal-body">
-        <label>${T('upload-image-2')}</label>
-        <input id="newAvatar" name="newAvatar" type="file" accept="image/*"/>
-        <label>${T('upload-image-2')}</label>
-        <div>
-            <img id="avatarUpload" style="width: 200px;" src="/static/images/unknown_avatar.png"/>
+        <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">&times;</button>
+            <h3 id="uploadImageLabel">${header}</h3>
+        </div>
+        <div class="modal-body">
+            <div class="row-fluid">
+                <div class="span6">
+                    <label>${T('upload-image-2')}</label>
+                    <input id="newAvatar" name="newAvatar" type="file" accept="image/*"/>
+                </div>
+                <div class="span3 offset1">
+                    <div class="cropped_image_preview {{if circle_preview}}img-circle{{/if}}"
+                         style="width: 150px; height: 150px; display: none;">
+                        <img id="image_upload_preview">
+                    </div>
+                </div>
+            </div>
+            <label>${T('upload-image-2')}</label>
+            <div>
+                <img id="avatarUpload" style="width: 200px;" src="/static/images/unknown_avatar.png"/>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button action="cancel" class="btn" data-dismiss="modal">${T('Cancel')}</button>
+            <button action="submit" class="btn btn-primary">${T('Submit')}</button>
         </div>
     </div>
-    <div class="modal-footer">
-        <button action="cancel" class="btn" data-dismiss="modal">${T('Cancel')}</button>
-        <button action="submit" class="btn btn-primary">${T('Submit')}</button>
-    </div>
-</div>
+{% endraw %}

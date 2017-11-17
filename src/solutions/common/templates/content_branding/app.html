@@ -8,7 +8,7 @@
  <meta property="rt:style:color-scheme" content="{{ color_scheme }}"/>
  <meta property="rt:wakelock" content="true"/>
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
- 
+
  <link href="jquery/jquery.mobile.inline-png-1.4.2.min.css" rel="stylesheet" media="screen" />
 <link href="font-awesome/css/font-awesome.min.css" rel="stylesheet" media="screen" />
 
@@ -57,7 +57,7 @@
         <div id="no_internet" class="clearfix" style="display:none; float: right; font-size: 2em; z-index: 21; position: fixed; top: 180px; right: 0;">
               <a style="font-size: 0.75em; border-width: 5px 0 5px 5px; border-radius: 5px 0 0 5px;" href="#" class="ui-btn ui-icon-alert ui-btn-icon-left">{% translate language, 'common', 'no-internet-connection' %}</a>
         </div>
-        
+
 	    <div data-role="popup" data-dismissible="false" id="qr-scanned-select-popup" class="ui-content">
 	        <a style="font-size: 3em;" href="#" data-rel="back" data-role="button" data-theme="a" data-icon="delete" data-iconpos="notext" class="closeQrScannedSelectPopup ui-btn-right"></a>
 	        <div style="padding: 2em;">
@@ -95,13 +95,13 @@
 							        <span style="height: 4.7em; line-height: 4.7em;">0</span>
 							    </div>
 						    </div>
-						    
+
 						    <div class="top">
                                 <span class="clear">C</span>
                                 <div class="screen"></div>
                             </div>
 						</div>
-		                
+
 		                <button class="closeAdd1Popup rectancular-small-btn ui-btn btn-green ui-corner-all" addAction="submit" onclick="">{% translate language, 'common', 'Submit' %}</button>
 		                <button class="closeAdd1Popup rectancular-small-btn ui-btn btn-red ui-corner-all" addAction="cancel" onclick="">{% translate language, 'common', 'Cancel' %}</button>
 	                </div>
@@ -147,7 +147,7 @@
 							        <span class="green">+5</span>
 							        <span class="green">+10</span>
 							    </div>
-							    
+
 							    <div class="keys" style="width: 12.45em;">
 	                                <!-- operators and other keys -->
 	                                <span class="add-3-min-1">-1</span>
@@ -155,13 +155,13 @@
 	                                <span class="add-3-min-10">-10</span>
 	                            </div>
 						    </div>
-                            
+
 						    <div class="top">
 						        <span class="clear">C</span>
 						        <div class="screen"></div>
 						    </div>
 						</div>
-                        
+
                         <button class="closeAdd3Popup rectancular-small-btn ui-btn btn-green ui-corner-all" addAction="submit" onclick="">{% translate language, 'common', 'Submit' %}</button>
                         <button class="closeAdd3Popup rectancular-small-btn ui-btn btn-red ui-corner-all" addAction="cancel" onclick="">{% translate language, 'common', 'Cancel' %}</button>
                     </div>
@@ -187,12 +187,12 @@
                                 <div class="keys" style="width: 12.45em; float: left; margin-right: 1em;">
 	                                <span class="green redeem-3-plus-1">+1</span>
                                 </div>
-                                
+
                                 <div class="keys" style="width: 12.45em;">
 	                                <span class="redeem-3-min-1">-1</span>
                                 </div>
                             </div>
-                            
+
                             <div class="top">
                                 <span class="clear">C</span>
                                 <div class="screen"></div>
@@ -208,7 +208,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div data-role="popup" data-dismissible="false" id="couple-qr-code-popup" class="ui-content">
             <a style="font-size: 3em;" href="#" data-rel="back" data-role="button" data-theme="a" data-icon="delete" data-iconpos="notext" class="closeCoupleQRCodePopup ui-btn-right"></a>
             <div style="padding: 2em;">
@@ -225,7 +225,7 @@
                 </div>
             </div>
         </div>
-        
+
          <div data-role="popup" data-dismissible="false" id="pin-activate-voucher-popup" class="ui-content">
             <a style="font-size: 3em;" href="#" data-rel="back" data-role="button" data-theme="a" data-icon="delete" data-iconpos="notext" class="closePinActivateVoucherPopup ui-btn-right"></a>
             <div style="padding: 2em;">
@@ -250,13 +250,13 @@
 						        <span style="height: 7.35em; line-height: 7.35em;">0</span>
 						    </div>
 					    </div>
-					    
+
 					    <div class="top">
                                <span class="clear">C</span>
                                <div class="screen"></div>
                            </div>
 					</div>
-	                
+
 	                <button class="closePinActivateVoucherPopup rectancular-small-btn ui-btn btn-green ui-corner-all" pinAction="submit" onclick="">{% translate language, 'common', 'Submit' %}</button>
 	                <button class="closePinActivateVoucherPopup rectancular-small-btn ui-btn btn-red ui-corner-all" pinAction="cancel" onclick="">{% translate language, 'common', 'Cancel' %}</button>
                 </div>
@@ -290,7 +290,18 @@
                 </div>
             </div>
         </div>
-        
+
+        <div data-role="popup" data-dismissible="false" id="link-voucher-to-user" class="ui-content">
+            <a style="font-size: 3em;" href="#" data-rel="back" data-role="button" data-theme="a" data-icon="delete" data-iconpos="notext" class="closeLinkVoucherPopup ui-btn-right"></a>
+            <div style="padding: 2em;">
+	            <h1>{% translate language, 'common', 'Link this voucher to a user?' %} <small class="uid"></small></h1>
+                <div class="clearfix">
+	                <button style="float: left; margin-right: 1em;" class="closeLinkVoucherPopup rectancular-btn ui-btn btn-green ui-corner-all" linkAction="submit" onclick="">{% translate language, 'common', 'Yes' %}</button>
+	                <button style="float: left;" class="closeLinkVoucherPopup rectancular-btn ui-btn btn-red ui-corner-all" linkAction="cancel" onclick="">{% translate language, 'common', 'No' %}</button>
+                </div>
+            </div>
+        </div>
+
         <div data-role="popup" data-dismissible="false" id="redeem-voucher-popup" class="ui-content">
             <a style="font-size: 3em;" href="#" data-rel="back" data-role="button" data-theme="a" data-icon="delete" data-iconpos="notext" class="closeRedeemVoucherPopup ui-btn-right"></a>
             <div style="padding: 2em;">
@@ -318,19 +329,19 @@
 						        <span style="height: 4.7em; line-height: 4.7em;">0</span>
 						    </div>
 					    </div>
-					    
+
 					    <div class="top">
                                <span class="clear">C</span>
                                <div class="screen"></div>
                            </div>
 					</div>
-	                
+
 	                <button class="closeRedeemVoucherPopup rectancular-small-btn ui-btn btn-green ui-corner-all" redeemAction="submit" onclick="">{% translate language, 'common', 'Submit' %}</button>
 	                <button class="closeRedeemVoucherPopup rectancular-small-btn ui-btn btn-red ui-corner-all" redeemAction="cancel" onclick="">{% translate language, 'common', 'Cancel' %}</button>
                 </div>
             </div>
         </div>
-        
+
         <div data-role="popup" data-dismissible="false" id="confirm-redeem-voucher-popup" class="ui-content">
             <a style="font-size: 3em;" href="#" data-rel="back" data-role="button" data-theme="a" data-icon="delete" data-iconpos="notext" class="closeConfirmRedeemVoucherPopup ui-btn-right"></a>
             <div style="padding: 2em;">
@@ -342,7 +353,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div data-role="popup" data-dismissible="false" id="error-popup" class="ui-content">
             <a style="font-size: 3em;" href="#" data-rel="back" data-role="button" data-theme="a" data-icon="delete" data-iconpos="notext" class="closeErrorPopup ui-btn-right"></a>
             <div style="padding: 2em;">

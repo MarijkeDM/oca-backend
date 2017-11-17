@@ -102,21 +102,21 @@ var modules = {};
                             </a>
                         </li>
     {% endif %}
-{% if sln_settings.uses_inbox() %}
+    {% if sln_settings.uses_inbox() %}
                         <li menu="inbox">
                             <a href="#" help="OyWCQ7nh00o">
                                 {% translate language, "common", "Inbox" %} <span class="badge badge-important sln-inbox-badge"></span>
                             </a>
                         </li>
-{% endif %}
-{% if SolutionModule.RESTAURANT_RESERVATION in sln_settings.modules and not is_layout_user %}
+    {% endif %}
+    {% if SolutionModule.RESTAURANT_RESERVATION in sln_settings.modules %}
                         <li menu="reservations" id="reservations_menu">
                             <a href="#" help="28eg1X71-3w">
                                 {% translate language, "common", "reservations-menu" %}
                                 <span class="badge badge-success"></span>
                             </a>
                         </li>
-{% endif %}
+    {% endif %}
 {% endif %}
 
 {% if not loyalty and (SolutionModule.MENU in sln_settings.modules or SolutionModule.ORDER in sln_settings.modules) %}
@@ -129,20 +129,20 @@ var modules = {};
 {% endif %}
 
 {% if not is_layout_user %}
-{% if SolutionModule.SANDWICH_BAR in sln_settings.modules %}
+    {% if SolutionModule.SANDWICH_BAR in sln_settings.modules %}
                         <li menu="sandwiches">
                             <a href="#">
                                 {% translate language, "common", "Sandwiches" %}
                                 <span class="badge badge-important sln-sandwich-badge"></span>
                             </a>
                         </li>
-{% endif %}
-{% if SolutionModule.AGENDA in sln_settings.modules and not loyalty %}
+    {% endif %}
+    {% if SolutionModule.AGENDA in sln_settings.modules and not loyalty %}
                         <li menu="events"><a href="#" help="dafoHacdVAU">{% translate language, "common", "agenda" %}</a></li>
-{% endif %}
-{% if SolutionModule.BROADCAST in sln_settings.modules %}
+    {% endif %}
+    {% if SolutionModule.BROADCAST in sln_settings.modules %}
                         <li menu="broadcast"><a href="#/broadcast" help="MMvE7paS59k">{% if news_enabled %}{% translate language, "common", "News & actions" %}{% else %}{% translate language, "common", "Broadcast" %}{% endif %}</a></li>
-{% endif %}
+    {% endif %}
 {% endif %}
 
 {% if SolutionModule.STATIC_CONTENT in sln_settings.modules and not loyalty %}
@@ -150,55 +150,55 @@ var modules = {};
 {% endif %}
 
 {% if not is_layout_user %}
-{% if SolutionModule.REPAIR in sln_settings.modules %}
+    {% if SolutionModule.REPAIR in sln_settings.modules %}
                         <li menu="repair">
                             <a href="#" help="eAR3YTv2opI">
                                 {% translate language, "common", "repair" %}
                                 <span class="badge badge-important sln-repair-badge"></span>
                             </a>
                         </li>
-{% endif %}
-{% if SolutionModule.DISCUSSION_GROUPS in sln_settings.modules and not loyalty %}
+    {% endif %}
+    {% if SolutionModule.DISCUSSION_GROUPS in sln_settings.modules and not loyalty %}
                             <li menu="discussion_groups">
                             <a href="#/discussion_groups">
                             {% translate language, "common", "discussion_groups" %}
                             </a>
                             </li>
-{% endif %}
-{% if SolutionModule.GROUP_PURCHASE in sln_settings.modules %}
+    {% endif %}
+    {% if SolutionModule.GROUP_PURCHASE in sln_settings.modules %}
                             <li menu="group_purchase">
                                 <a href="#">
                                     {% translate language, "common", "group-purchase" %}
                                     <span class="badge badge-important sln-group-purchase-badge"></span>
                                 </a>
                             </li>
-{% endif %}
-{% if SolutionModule.ORDER in sln_settings.modules %}
+    {% endif %}
+    {% if SolutionModule.ORDER in sln_settings.modules %}
                         <li menu="order">
                             <a href="#">
                               {% translate language, "common", "orders" %}
                               <span class="badge badge-important sln-orders-badge"></span>
                             </a>
                         </li>
-{% endif %}
-{% if SolutionModule.PHARMACY_ORDER in sln_settings.modules %}
+    {% endif %}
+    {% if SolutionModule.PHARMACY_ORDER in sln_settings.modules %}
                         <li menu="pharmacy_orders">
                             <a href="#">
                               {% translate language, "common", "orders" %}
                               <span class="badge badge-important sln-pharmacy_orders-badge"></span>
                             </a>
                         </li>
-{% endif %}
-{% if not loyalty %}
+    {% endif %}
+    {% if not loyalty %}
     <!-- show loyalty tab if there is no "Functionalities" page or in case loyalty is enabled -->
-    {% if not functionality_modules or SolutionModule.LOYALTY in sln_settings.modules or SolutionModule.HIDDEN_CITY_WIDE_LOTTERY in sln_settings.modules %}
+        {% if not functionality_modules or SolutionModule.LOYALTY in sln_settings.modules or SolutionModule.HIDDEN_CITY_WIDE_LOTTERY in sln_settings.modules %}
                         <li menu="loyalty"><a href="#/loyalty">{% translate language, "common", "loyalty" %} <span
                                 class="badge badge-important sln-loyalty-badge"></span></a></li>
+        {% endif %}
     {% endif %}
-{% endif %}
-{% if SolutionModule.CITY_VOUCHERS in sln_settings.modules and not loyalty %}
+    {% if SolutionModule.CITY_VOUCHERS in sln_settings.modules and not loyalty %}
                         <li menu="city_vouchers"><a href="#">{% translate language, "common", "Vouchers" %}</a></li>
-{% endif %}
+    {% endif %}
 {% endif %}
 
 {% if not loyalty %}
@@ -210,13 +210,13 @@ var modules = {};
 
 
 {% if not is_layout_user %}
-{% if not loyalty %}
+    {% if not loyalty %}
                         <li menu="statistics" class="disabled"><a class="help_menu_item" href="#">{% translate language, "common", "statistics" %}</a></li>
                         <li menu="qanda"><a class="help_menu_item" href="#">{% translate language, "common", "qanda" %}</a></li>
-{% endif %}
-{% if customer and sln_settings.can_edit_services(customer) and not loyalty %}
+    {% endif %}
+    {% if customer and sln_settings.can_edit_services(customer) and not loyalty %}
                         <li menu="services"><a href="#/services">{% translate language, "common", "services" %}</a></li>
-{% endif %}
+    {% endif %}
 {% endif %}
 
                     </ul>
@@ -284,18 +284,18 @@ var modules = {};
 	            </div>
 
 {% if not is_layout_user %}
-{% if functionality_modules %}
-{% include 'functionalities/functionalities.tmpl' %}
-{% endif %}
-{% if sln_settings.uses_inbox() %}
-    {%- include 'inbox.tmpl' %}
-{% endif %}
-{% if sln_settings.uses_inbox() and sln_settings.can_edit_services(customer) %}
-    {%- include 'customer_signup.tmpl' %}
-{% endif %}
-{% if SolutionModule.RESTAURANT_RESERVATION in sln_settings.modules %}
-    {%- include 'restaurant_reservation.tmpl' %}
-{% endif %}
+	{% if functionality_modules %}
+	    {% include 'functionalities/functionalities.tmpl' %}
+	{% endif %}
+	{% if sln_settings.uses_inbox() %}
+	    {%- include 'inbox.tmpl' %}
+	{% endif %}
+	{% if sln_settings.uses_inbox() and sln_settings.can_edit_services(customer) %}
+	    {%- include 'customer_signup.tmpl' %}
+	{% endif %}
+	{% if SolutionModule.RESTAURANT_RESERVATION in sln_settings.modules %}
+	    {%- include 'restaurant_reservation.tmpl' %}
+	{% endif %}
 {% endif %}
 
 {% if not loyalty and (SolutionModule.MENU in sln_settings.modules or SolutionModule.ORDER in sln_settings.modules) %}
@@ -303,15 +303,15 @@ var modules = {};
 {% endif %}
 
 {% if not is_layout_user %}
-{% if SolutionModule.SANDWICH_BAR in sln_settings.modules %}
-    {%- include 'sandwiches.tmpl' %}
-{% endif %}
-{% if SolutionModule.AGENDA in sln_settings.modules and not loyalty %}
-    {%- include 'events.tmpl' %}
-{% endif %}
-{% if SolutionModule.BROADCAST in sln_settings.modules %}
-    {%- include 'broadcast.tmpl' %}
-{% endif %}
+	{% if SolutionModule.SANDWICH_BAR in sln_settings.modules %}
+	    {%- include 'sandwiches.tmpl' %}
+	{% endif %}
+	{% if SolutionModule.AGENDA in sln_settings.modules and not loyalty %}
+	    {%- include 'events.tmpl' %}
+	{% endif %}
+	{% if SolutionModule.BROADCAST in sln_settings.modules %}
+	    {%- include 'broadcast.tmpl' %}
+	{% endif %}
 {% endif %}
 
 {% if SolutionModule.STATIC_CONTENT in sln_settings.modules and not loyalty %}
@@ -319,50 +319,46 @@ var modules = {};
 {% endif %}
 
 {% if not is_layout_user %}
-{% if SolutionModule.REPAIR in sln_settings.modules %}
-    {%- include 'repair.tmpl' %}
-{% endif %}
-{% if SolutionModule.DISCUSSION_GROUPS in sln_settings.modules %}
-    {%- include 'discussion_groups/discussion_groups.tmpl' %}
-{% endif %}
-{% endif %}
-
-{% if SolutionModule.GROUP_PURCHASE in sln_settings.modules %}
-    {%- include 'group_purchase.tmpl' %}
-{% endif %}
-
-{% if not is_layout_user %}
-{% if SolutionModule.ORDER in sln_settings.modules %}
-    {%- include 'order.tmpl' %}
-{% endif %}
-{% if SolutionModule.PHARMACY_ORDER in sln_settings.modules %}
-    {%- include 'pharmacy_order.tmpl' %}
-{% endif %}
-{% if not loyalty %}
-    {%- include 'loyalty.tmpl' %}
-{% endif %}
-{% if SolutionModule.CITY_VOUCHERS in sln_settings.modules %}
-    {%- include 'city_vouchers/city_vouchers.tmpl' %}
-{% endif %}
+	{% if SolutionModule.REPAIR in sln_settings.modules %}
+	    {%- include 'repair.tmpl' %}
+	{% endif %}
+	{% if SolutionModule.DISCUSSION_GROUPS in sln_settings.modules %}
+	    {%- include 'discussion_groups/discussion_groups.tmpl' %}
+	{% endif %}
+	{% if SolutionModule.GROUP_PURCHASE in sln_settings.modules %}
+	    {%- include 'group_purchase.tmpl' %}
+	{% endif %}
+	{% if SolutionModule.ORDER in sln_settings.modules %}
+	    {%- include 'order.tmpl' %}
+	{% endif %}
+	{% if SolutionModule.PHARMACY_ORDER in sln_settings.modules %}
+	    {%- include 'pharmacy_order.tmpl' %}
+	{% endif %}
+	{% if not loyalty %}
+	    {%- include 'loyalty.tmpl' %}
+	{% endif %}
+	{% if SolutionModule.CITY_VOUCHERS in sln_settings.modules %}
+	    {%- include 'city_vouchers/city_vouchers.tmpl' %}
+	{% endif %}
 {% endif %}
 
 {% if not loyalty %}
 	{% if not is_layout_user %}
-    {%- include 'statistics.tmpl' %}
-	{%- include 'qanda.tmpl' %}
-    {% if customer and sln_settings.can_edit_services(customer) and not loyalty %}
-    {%- include 'services/services.tmpl' %}
-    {% endif %}
-    {% if customer and SolutionModule.BILLING in sln_settings.modules and IS_MOBICAGE_LEGAL_ENTITY %}
-    {%- include 'shop/shop.tmpl' %}
-    {% endif %}
+        {%- include 'statistics.tmpl' %}
+	    {%- include 'qanda.tmpl' %}
+        {% if customer and sln_settings.can_edit_services(customer) and not loyalty %}
+            {%- include 'services/services.tmpl' %}
+        {% endif %}
+        {% if customer and SolutionModule.BILLING in sln_settings.modules and IS_MOBICAGE_LEGAL_ENTITY %}
+            {%- include 'shop/shop.tmpl' %}
+        {% endif %}
     {% endif %}
     <div id="settings" class="page" style="display: none;">
                         <ul class="nav nav-tabs">
                             <li class="active" section="section_general"><a href="#/settings/general"
                                                                             help="5EQJZ12RZ9Q">{% translate language, "common", "settings-general" %}</a>
                             </li>
-                            {% if SolutionModule.CITY_APP in sln_settings.modules %}
+                            {% if not is_layout_user and SolutionModule.CITY_APP in sln_settings.modules %}
                                 <li section="section_app_settings">
                                     <a href="#/settings/app">{% translate language, 'common', 'app' %}</a>
                                 </li>
@@ -374,40 +370,45 @@ var modules = {};
                             {% if not is_layout_user and sln_settings.uses_inbox() %}
                                 <li class="" section="section_settings_inbox"><a href="#" help="kZqDPlPAtQY">{% translate language, "common", "Inbox" %}</a></li>
                             {% endif %}
-                            {% if SolutionModule.RESTAURANT_RESERVATION in sln_settings.modules %}
+                            {% if not is_layout_user and SolutionModule.RESTAURANT_RESERVATION in sln_settings.modules %}
 	                            <li section="section_settings_restaurant_reservation"><a href="#" help="oQeTd85ejYY">{% translate language, "common", "reservation" %}</a></li>
                             {% endif %}
-                            <li section="section_holidays"><a href="#" help="l_BlEhnXRcE">{% translate language, "common", "settings-holidays" %}</a></li>
-                            {% if SolutionModule.AGENDA in sln_settings.modules %}
+                            {% if not is_layout_user %}
+                                <li section="section_holidays"><a href="#" help="l_BlEhnXRcE">{% translate language, "common", "settings-holidays" %}</a></li>
+                            {% endif %}
+                            {% if not is_layout_user and SolutionModule.AGENDA in sln_settings.modules %}
                                 <li class="" section="section_settings_agenda"><a href="#" help="5EQJZ12RZ9Q">{% translate language, "common", "agenda" %}</a></li>
                             {% endif %}
-                            {% if SolutionModule.APPOINTMENT in sln_settings.modules %}
+                            {% if not is_layout_user and SolutionModule.APPOINTMENT in sln_settings.modules %}
                                 <li class="" section="section_settings_appointment"><a href="#" help="xDakZT8iso0">{% translate language, "common", "appointment" %}</a></li>
                             {% endif %}
-                            {% if SolutionModule.BROADCAST in sln_settings.modules %}
+                            {% if not is_layout_user and SolutionModule.BROADCAST in sln_settings.modules %}
                                 <li section="section_settings_broadcast">
                                     <a href="#/settings/broadcast">{% translate language, "common", "Broadcast" %}</a>
                                 </li>
                             {% endif %}
-                            {% if SolutionModule.SANDWICH_BAR in sln_settings.modules %}
+                            {% if not is_layout_user and SolutionModule.SANDWICH_BAR in sln_settings.modules %}
                                 <li class="" section="section_settings_sandwich_bar"><a href="#">{% translate language, "common", "Sandwiches" %}</a></li>
                             {% endif %}
-                            {% if SolutionModule.REPAIR in sln_settings.modules %}
+                            {% if not is_layout_user and SolutionModule.REPAIR in sln_settings.modules %}
                                 <li class="" section="section_settings_repair"><a href="#">{% translate language, "common", "repair" %}</a></li>
                             {% endif %}
-                            {% if SolutionModule.GROUP_PURCHASE in sln_settings.modules %}
+                            {% if not is_layout_user and SolutionModule.GROUP_PURCHASE in sln_settings.modules %}
                                 <li class="" section="section_settings_group_purchase"><a href="#">{% translate language, "common", "group-purchase" %}</a></li>
                             {% endif %}
-                            {% if SolutionModule.ORDER in sln_settings.modules %}
+                            {% if not is_layout_user and SolutionModule.ORDER in sln_settings.modules %}
 							    <li class="" section="section_settings_order"><a href="#">{% translate language, "common", "orders" %}</a></li>
                             {% endif %}
-                            {% if SolutionModule.LOYALTY in sln_settings.modules or SolutionModule.HIDDEN_CITY_WIDE_LOTTERY in sln_settings.modules %}
+                            {% if not is_layout_user and (SolutionModule.LOYALTY in sln_settings.modules or SolutionModule.HIDDEN_CITY_WIDE_LOTTERY in sln_settings.modules) %}
                                 <li section="section_settings_loyalty"><a href="#">{% translate language, "common", "loyalty" %}</a></li>
                             {% endif %}
-                            {% if SolutionModule.QR_CODES in sln_settings.modules %}
+                            {% if SolutionModule.CITY_VOUCHERS in sln_settings.modules %}
+                                <li section="section_settings_city_vouchers"><a href="#">{% translate language, "common", "Vouchers" %}</a></li>
+                            {% endif %}
+                            {% if not is_layout_user and SolutionModule.QR_CODES in sln_settings.modules %}
                                 <li section="section_qr_codes"><a href="#" help="plfF98FLpxI">{% translate language, "common", "settings-qr-codes" %}</a></li>
                             {% endif %}
-                            {% if SolutionModule.BULK_INVITE in sln_settings.modules and not is_layout_user %}
+                            {% if not is_layout_user and SolutionModule.BULK_INVITE in sln_settings.modules %}
                                 <li section="section_bulk_invite"><a href="#" help="ovlJ45CPNTI">{% translate language, "common", "settings-bulk-invite" %}</a></li>
                             {% endif %}
                             {% if not is_layout_user and (sln_settings.uses_inbox() or SolutionModule.BROADCAST in sln_settings.modules or SolutionModule.AGENDA in sln_settings.modules) %}
@@ -421,7 +422,7 @@ var modules = {};
                         {% if SolutionModule.CITY_APP in sln_settings.modules %}
                             <section id="section_app_settings" style="display: none;"></section>
                         {% endif %}
-                        {% if SolutionModule.BILLING in sln_settings.modules and not is_layout_user %}
+                        {% if not is_layout_user and SolutionModule.BILLING in sln_settings.modules %}
                             <section id="section_billing" style="display: none;">
                                 {% include 'billing_settings.tmpl' %}
                             </section>
@@ -430,7 +431,7 @@ var modules = {};
                             <div id="branding_settings" class="pull-left"></div>
                             <div id="branding_settings_preview" class="pull-right"></div>
                         </section>
-                        {% if sln_settings.uses_inbox() %}
+                        {% if not is_layout_user and sln_settings.uses_inbox() %}
 	                        <section id="section_settings_inbox" style="display: none;">
 	                            <div class="row">
 	                                 <div class="span4">&nbsp;</div>
@@ -467,52 +468,56 @@ var modules = {};
 	                        </section>
                         {% endif %}
 
-						{% if SolutionModule.RESTAURANT_RESERVATION in sln_settings.modules %}
+						{% if not is_layout_user and SolutionModule.RESTAURANT_RESERVATION in sln_settings.modules %}
 						    {%- include 'restaurant_reservation_settings.tmpl' %}
 						{% endif %}
-                        {%- include 'holiday.tmpl' %}
-						{% if SolutionModule.AGENDA in sln_settings.modules %}
+						{% if not is_layout_user %}
+                            {%- include 'holiday.tmpl' %}
+                        {% endif %}
+						{% if not is_layout_user and SolutionModule.AGENDA in sln_settings.modules %}
 						    {%- include 'events_settings.tmpl' %}
-						{% endif %}
+                        {% endif %}
 
-        {% if SolutionModule.APPOINTMENT in sln_settings.modules %}
+        {% if not is_layout_user and SolutionModule.APPOINTMENT in sln_settings.modules %}
             {%- include 'appointment_settings.tmpl' %}
         {% endif %}
 
-        {% if SolutionModule.BROADCAST in sln_settings.modules %}
+        {% if not is_layout_user and SolutionModule.BROADCAST in sln_settings.modules %}
             {%- include 'broadcast_settings.tmpl' %}
         {% endif %}
 
-        {% if SolutionModule.SANDWICH_BAR in sln_settings.modules %}
-						    {%- include 'sandwiches_settings.tmpl' %}
-						{% endif %}
+        {% if not is_layout_user and SolutionModule.SANDWICH_BAR in sln_settings.modules %}
+		    {%- include 'sandwiches_settings.tmpl' %}
+		{% endif %}
 
-        {% if SolutionModule.REPAIR in sln_settings.modules %}
-						    {%- include 'repair_settings.tmpl' %}
-						{% endif %}
+        {% if not is_layout_user and SolutionModule.REPAIR in sln_settings.modules %}
+		    {%- include 'repair_settings.tmpl' %}
+		{% endif %}
 
-        {% if SolutionModule.GROUP_PURCHASE in sln_settings.modules %}
+        {% if not is_layout_user and SolutionModule.GROUP_PURCHASE in sln_settings.modules %}
 						<section id="section_settings_group_purchase" style="display: none;">
 						    <div class="sln-set-group_purchase-visibility"></div>
 						</section>
 						{% endif %}
 
-        {% if SolutionModule.ORDER in sln_settings.modules %}
+        {% if not is_layout_user and SolutionModule.ORDER in sln_settings.modules %}
                             {%- include 'order_settings.tmpl' %}
                         {% endif %}
 
-						{% if SolutionModule.LOYALTY in sln_settings.modules or SolutionModule.HIDDEN_CITY_WIDE_LOTTERY in sln_settings.modules %}
+						{% if not is_layout_user and (SolutionModule.LOYALTY in sln_settings.modules or SolutionModule.HIDDEN_CITY_WIDE_LOTTERY in sln_settings.modules) %}
 						    {%- include 'loyalty_settings.tmpl' %}
 						{% endif %}
 
-        {% if SolutionModule.QR_CODES in sln_settings.modules %}
+        {% if not is_layout_user and SolutionModule.QR_CODES in sln_settings.modules %}
 						    {%- include 'qr_codes.tmpl' %}
-						{% endif %}
-
-        {% if SolutionModule.BULK_INVITE in sln_settings.modules and not is_layout_user %}
+                        {% endif %}
+        {% if SolutionModule.CITY_VOUCHERS in sln_settings.modules %}
+                        {%- include 'city_vouchers/city_vouchers_settings.tmpl' %}
+        {% endif %}
+        {% if not is_layout_user and SolutionModule.BULK_INVITE in sln_settings.modules %}
 						    {%- include 'bulk_invite.tmpl' %}
 						{% endif %}
-        {% if sln_settings.uses_inbox() or SolutionModule.BROADCAST in sln_settings.modules or SolutionModule.AGENDA in sln_settings.modules %}
+        {% if not is_layout_user and (sln_settings.uses_inbox() or SolutionModule.BROADCAST in sln_settings.modules or SolutionModule.AGENDA in sln_settings.modules) %}
                         {%- include 'roles_settings.tmpl' %}
         {% endif %}
                     </div>

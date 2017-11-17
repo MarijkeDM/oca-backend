@@ -24,6 +24,8 @@ var currentScannedUrl = null;
 var shouldDoubleClose = false;
 
 var slidesUUID = null;
+var voucherUserLink = false;
+var voucherActivationData = {};
 var solutionsLoyaltyLoadGuid = null;
 var solutionsLoyaltyScanGuid = null;
 var solutionsLoyaltyPutGuid = null;
@@ -66,7 +68,7 @@ var onRogerthatReady = function() {
     var userEmail = rogerthat.user.account;
 
     console.log("onRogerthatReady()");
-    console.log("OSA Loyalty ADMIN v1.0.6");
+    console.log("OSA Loyalty ADMIN v1.0.7");
     console.log("LOYALTY_TYPE: " + LOYALTY_TYPE);
     console.log("service_email: " + serviceEmail);
     console.log("user_email: " + userEmail);
@@ -98,7 +100,7 @@ var onRogerthatReady = function() {
     });
 
     setLoyaltySettings();
-    
+
     var userScanned = function(result, now_) {
         console.log("scanned: " + result.userDetails.email + ":" + result.userDetails.appId);
         if (result.userDetails.email == "dummy" && result.userDetails.appId == "dummy") {
@@ -392,6 +394,10 @@ var onRogerthatReady = function() {
         } else if (result.status == "error") {
             hideLoading();
             showErrorPopupOverlay(result.content);
+        } else if (result.userDetails && voucherUserLink) {
+            // FIXME: too much global variables/data, this might
+            // introduce many errors?
+            activateVoucher(voucherActivationData, result.userDetails);
         } else if (result.userDetails) {
             userScanned(result, now_);
         } else {

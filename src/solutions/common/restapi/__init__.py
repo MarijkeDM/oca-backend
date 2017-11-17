@@ -16,16 +16,15 @@
 # @@license_version:1.2@@
 
 import base64
+from collections import defaultdict
 import datetime
 import logging
 import os
-from collections import defaultdict
 from types import NoneType
-
-from google.appengine.ext import db, deferred
 
 from babel.dates import format_date
 from babel.numbers import format_currency
+from google.appengine.ext import db, deferred
 from mcfw.consts import MISSING
 from mcfw.properties import azzert, get_members
 from mcfw.restapi import rest, GenericRESTRequestHandler
@@ -62,7 +61,7 @@ from solutions.common import SOLUTION_COMMON
 from solutions.common.bizz import get_next_free_spots_in_service_menu, common_provision, timezone_offset, \
     broadcast_updates_pending, SolutionModule, save_broadcast_types_order, delete_file_blob, create_file_blob, \
     OrganizationType, create_news_publisher, delete_news_publisher, enable_or_disable_solution_module, \
-    twitter as bizz_twitter, get_user_defined_roles
+    twitter as bizz_twitter, get_user_defined_roles, get_translated_broadcast_types
 from solutions.common.bizz.branding_settings import save_branding_settings
 from solutions.common.bizz.events import update_events_from_google, get_google_authenticate_url, get_google_calendars, \
     create_calendar_admin, delete_calendar_admin
@@ -593,6 +592,9 @@ def get_all_defaults():
                                          SolutionLogo.create_key(service_user),
                                          SolutionAvatar.create_key(service_user)])
     defaults = []
+
+    if not sln_settings.broadcast_types:
+        defaults.append(u'broadcast_types')
 
     if not logo or logo.is_default:
         defaults.append(u'Logo')
@@ -1852,18 +1854,28 @@ def change_broadcast_types_order(broadcast_types):
     return RETURNSTATUS_TO_SUCCESS
 
 
-@rest('/common/settings/broadcast/add_type', 'post')
+@rest('/common/settings/broadcast/add_or_remove_type', 'post')
 @returns(ReturnStatusTO)
-@arguments(broadcast_type=unicode)
-def add_new_broadcast_type(broadcast_type):
+@arguments(broadcast_type=unicode, delete=bool)
+def add_or_remove_broadcast_type(broadcast_type, delete):
     try:
+        updated = False
         sln_settings = get_solution_settings(users.get_current_user())
-        azzert(broadcast_type not in sln_settings.broadcast_types)
-        sln_settings.broadcast_types.append(broadcast_type)
-        sln_settings.updates_pending = True
-        put_and_invalidate_cache(sln_settings)
+        translated_broadcast_types = get_translated_broadcast_types(sln_settings)
+        if delete:
+            if translated_broadcast_types[broadcast_type] in sln_settings.broadcast_types:
+                sln_settings.broadcast_types.remove(translated_broadcast_types[broadcast_type])
+                updated = True
+        else:
+            if broadcast_type not in translated_broadcast_types and broadcast_type not in sln_settings.broadcast_types:
+                sln_settings.broadcast_types.append(broadcast_type)
+                updated = True
 
-        broadcast_updates_pending(sln_settings)
+        if updated:
+            sln_settings.updates_pending = True
+            put_and_invalidate_cache(sln_settings)
+            broadcast_updates_pending(sln_settings)
+
         return RETURNSTATUS_TO_SUCCESS
     except BusinessException as e:
         return ReturnStatusTO.create(False, e.message)

@@ -26,6 +26,7 @@ import urllib
 
 import webapp2
 from google.appengine.api import search, urlfetch, users as gusers
+from google.appengine.api.urlfetch_errors import DeadlineExceededError
 from google.appengine.ext import db
 from google.appengine.ext.webapp import template
 
@@ -647,8 +648,12 @@ def get_company_info(vat, country=None):
 
     url = 'http://euvat.ga/api/info/%s' % urllib.quote(vat)
     logging.info(url)
-    response = urlfetch.fetch(url, deadline=10, validate_certificate=False)
-    if response.status_code != 200:
+    try:
+        response = urlfetch.fetch(url, deadline=10, validate_certificate=False)
+    except DeadlineExceededError:
+        response = None
+
+    if not response or response.status_code != 200:
         return ValidateVatReturnStatusTO.create(False, u'VAT number could not be validated!',
                                                 vat=vat)
     logging.info(response.content)

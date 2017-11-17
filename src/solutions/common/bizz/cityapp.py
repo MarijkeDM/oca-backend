@@ -34,13 +34,13 @@ from solutions.common.models.cityapp import CityAppProfile
 
 
 @returns(NoneType)
-@arguments(service_user=users.User, gather_events=bool, uitdatabank_secret=unicode, uitdatabank_key=unicode, uitdatabank_region=unicode)
-def save_cityapp_settings(service_user, gather_events, uitdatabank_secret, uitdatabank_key, uitdatabank_region):
+@arguments(service_user=users.User, gather_events=bool, uitdatabank_secret=unicode, uitdatabank_key=unicode, uitdatabank_regions=[unicode])
+def save_cityapp_settings(service_user, gather_events, uitdatabank_secret, uitdatabank_key, uitdatabank_regions):
     def trans():
         cap = get_cityapp_profile(service_user)
         cap.uitdatabank_secret = uitdatabank_secret
         cap.uitdatabank_key = uitdatabank_key
-        cap.uitdatabank_region = uitdatabank_region
+        cap.uitdatabank_regions = uitdatabank_regions
         cap.gather_events_enabled = gather_events
         cap.put()
     run_in_transaction(trans, False)
@@ -56,13 +56,13 @@ def get_uitdatabank_events(city_app_profile, page, pagelength, changed_since=Non
 @returns(tuple)
 @arguments(city_app_profile=CityAppProfile, page=(int, long), pagelength=(int, long), changed_since=(int, long, NoneType))
 def _get_uitdatabank_events_old(city_app_profile, page, pagelength, changed_since=None):
-    if not (city_app_profile.uitdatabank_key and city_app_profile.uitdatabank_region):
+    if not (city_app_profile.uitdatabank_key and city_app_profile.uitdatabank_regions):
         return False, "Not all fields are provided"
 
     url = "http://build.uitdatabank.be/api/events/search?"
     values = {'key' : city_app_profile.uitdatabank_key,
               'format' : "json",
-              'regio' : city_app_profile.uitdatabank_region,
+              'regio' : city_app_profile.uitdatabank_regions[0],
               'changedsince' : time.strftime('%Y-%m-%dT%H.%M', time.gmtime(changed_since)) if changed_since else "",
               'page' : page,
               'pagelength' : pagelength }
@@ -91,7 +91,7 @@ def _get_uitdatabank_events_v2(city_app_profile, page, pagelength):
 
     secret = city_app_profile.uitdatabank_secret.encode("utf8")
     key = city_app_profile.uitdatabank_key.encode("utf8")
-    city = city_app_profile.uitdatabank_region.encode("utf8")
+    cities = [c.encode("utf8") for c in city_app_profile.uitdatabank_regions]
 
     url = "https://www.uitid.be/uitid/rest/searchv2/search"
     headers = {}
@@ -104,7 +104,7 @@ def _get_uitdatabank_events_v2(city_app_profile, page, pagelength):
         "oauth_version": "1.0",
     }
 
-    url_params = {"q": "city:%s" % city,
+    url_params = {"q": " OR ".join(["city:%s" % city for city in cities]),
                   "rows": pagelength,
                   "start": (page - 1) * pagelength,
                   "datetype": "next3months",

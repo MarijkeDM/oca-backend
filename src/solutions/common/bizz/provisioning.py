@@ -16,28 +16,29 @@
 # @@license_version:1.2@@
 
 import base64
+from contextlib import closing
+from datetime import timedelta, datetime
 import json
 import logging
 import os
 import time
-import urllib
-from contextlib import closing
-from datetime import timedelta, datetime
 from types import NoneType
+import urllib
 from zipfile import ZipFile, ZIP_DEFLATED
 
-import jinja2
-from google.appengine.ext import db
-
-import solutions
 from babel import dates
-from babel.dates import format_date, format_timedelta, get_next_timezone_transition, format_time
+from babel.dates import format_date, format_timedelta, get_next_timezone_transition, format_time, get_timezone
+
+from google.appengine.ext import db
+import jinja2
 from mcfw.properties import azzert
 from mcfw.rpc import arguments, returns, serialize_complex_value
+from rogerthat.bizz.app import add_auto_connected_services, delete_auto_connected_service
 from rogerthat.bizz.features import Features
 from rogerthat.consts import DAY
 from rogerthat.dal import parent_key, put_and_invalidate_cache
 from rogerthat.models import Branding, ServiceMenuDef, ServiceRole, App, ServiceProfile
+from rogerthat.models.properties.app import AutoConnectedService
 from rogerthat.rpc import users
 from rogerthat.service.api import system, qr
 from rogerthat.settings import get_server_settings
@@ -45,11 +46,14 @@ from rogerthat.to.friends import ServiceMenuDetailTO, ServiceMenuItemLinkTO
 from rogerthat.to.profile import ProfileLocationTO
 from rogerthat.to.qr import QRDetailsTO
 from rogerthat.utils import now, is_flag_set, xml_escape
+from rogerthat.utils.service import create_service_identity_user
 from rogerthat.utils.transactions import on_trans_committed
 from solutions import translate as common_translate
+import solutions
 from solutions.common import SOLUTION_COMMON
 from solutions.common.bizz import timezone_offset, render_common_content, SolutionModule, \
-    get_coords_of_service_menu_item, get_next_free_spot_in_service_menu, SolutionServiceMenuItem, put_branding
+    get_coords_of_service_menu_item, get_next_free_spot_in_service_menu, SolutionServiceMenuItem, put_branding,\
+    OrganizationType
 from solutions.common.bizz.events import provision_events_branding
 from solutions.common.bizz.group_purchase import provision_group_purchase_branding
 from solutions.common.bizz.loyalty import provision_loyalty_branding, get_loyalty_slide_footer
@@ -94,6 +98,7 @@ from solutions.common.to.loyalty import LoyaltyRevenueDiscountSettingsTO, Loyalt
 from solutions.common.utils import is_default_service_identity
 from solutions.djmatic import SOLUTION_DJMATIC
 from solutions.jinja_extensions import TranslateExtension
+
 
 try:
     from cStringIO import StringIO
@@ -429,6 +434,36 @@ def populate_identity(sln_settings, main_branding_key, previous_main_branding_ke
         identity.app_data = json.dumps(app_data).decode('utf8')
         system.put_identity(identity)
 
+        handle_auto_connected_service(sln_settings.service_user, sln_settings.search_enabled)
+
+
+def handle_auto_connected_service(service_user, visible):
+    from shop.models import Customer
+
+    customer = Customer.get_by_service_email(service_user.email())
+    if not customer:
+        return
+    if customer.organization_type != OrganizationType.CITY:
+        return
+
+    service_user = users.User(customer.service_email)
+    service_identity_email = create_service_identity_user(service_user).email()
+    app = App.get_by_key_name(customer.app_id)
+    if app.type != App.APP_TYPE_CITY_APP:
+        logging.debug('Not auto-connecting %s because "%s" is not a city app', customer.service_email, customer.app_id)
+        return
+    if app.demo:
+        logging.debug('Not auto-connecting %s because "%s" is a demo app', customer.service_email, customer.app_id)
+        return
+
+    if visible:
+        connected_services = app.auto_connected_services
+        if not connected_services.get(service_identity_email):
+            auto_connected_service = AutoConnectedService.create(service_identity_email, False, None, None)
+            add_auto_connected_services(customer.app_id, [auto_connected_service])
+    else:
+        delete_auto_connected_service(service_user, customer.app_id, service_identity_email)
+
 
 def create_app_data(sln_settings, service_identity, sln_i_settings, default_app_name, default_app_id):
     start = datetime.now()
@@ -457,10 +492,10 @@ def create_app_data(sln_settings, service_identity, sln_i_settings, default_app_
             holiday_dates_str.append(common_translate(sln_settings.main_language,
                                                       SOLUTION_COMMON,
                                                       'date_until_date',
-                                                      from_date=format_date(datetime.fromtimestamp(d1),
+                                                      from_date=format_date(datetime.fromtimestamp(d1, tz=get_timezone(sln_settings.timezone)),
                                                                             format='medium',
                                                                             locale=sln_settings.main_language),
-                                                      until_date=format_date(datetime.fromtimestamp(d2),
+                                                      until_date=format_date(datetime.fromtimestamp(d2, tz=get_timezone(sln_settings.timezone)),
                                                                              format='medium',
                                                                              locale=sln_settings.main_language)))
 
@@ -1300,8 +1335,12 @@ def _put_advanced_order_flow(sln_settings, sln_order_settings, main_branding, la
                 })
                 holiday_dates_str.append(
                     common_translate(lang, SOLUTION_COMMON, 'date_until_date') % {
-                        'from_date': format_date(datetime.fromtimestamp(d1), format='medium', locale=lang),
-                        'until_date': format_date(datetime.fromtimestamp(d2), format='medium', locale=lang)
+                        'from_date': format_date(datetime.fromtimestamp(d1, tz=get_timezone(sln_settings.timezone)),
+                                                 format='medium',
+                                                 locale=lang),
+                        'until_date': format_date(datetime.fromtimestamp(d2, tz=get_timezone(sln_settings.timezone)),
+                                                  format='medium',
+                                                  locale=lang)
                     }
                 )
 
@@ -1368,7 +1407,8 @@ def _put_advanced_order_flow(sln_settings, sln_order_settings, main_branding, la
         leap_time_message=leap_time_message,
         leap_time_str=leap_time_str,
         timezone_offsets=json.dumps(timezone_offsets),
-        Features=Features
+        Features=Features,
+        manual_confirmation=sln_order_settings.manual_confirmation
     )
     flow = JINJA_ENVIRONMENT.get_template('flows/advanced_order.xml').render(flow_params)
     return system.put_flow(flow.encode('utf-8'), multilanguage=False).identifier
@@ -1383,7 +1423,8 @@ def put_order(sln_settings, current_coords, main_branding, default_lang, tag):
     order_type = sln_order_settings.order_type
 
     if order_type == ORDER_TYPE_SIMPLE:
-        flow_params = dict(branding_key=main_branding.branding_key, language=default_lang, text_1=sln_order_settings.text_1)
+        flow_params = dict(branding_key=main_branding.branding_key, language=default_lang, text_1=sln_order_settings.text_1,
+                           manual_confirmation=sln_order_settings.manual_confirmation, name=sln_settings.name)
         order_flow = JINJA_ENVIRONMENT.get_template('flows/order.xml').render(flow_params)
         static_flow_hash = system.put_flow(order_flow.encode('utf-8'), multilanguage=False).identifier
     elif order_type == ORDER_TYPE_ADVANCED:

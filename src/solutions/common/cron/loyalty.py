@@ -17,8 +17,6 @@
 
 from datetime import date, datetime
 from dateutil.relativedelta import relativedelta
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 import json
 import logging
 import pytz
@@ -37,11 +35,10 @@ from rogerthat.dal.profile import get_profile_infos
 from rogerthat.models import Message
 from rogerthat.rpc import users
 from rogerthat.service.api import messaging, system
-from rogerthat.settings import get_server_settings
 from rogerthat.to.messaging import AnswerTO
 from rogerthat.to.service import UserDetailsTO
 from rogerthat.translations import DEFAULT_LANGUAGE
-from rogerthat.utils import now, send_mail_via_mime
+from rogerthat.utils import now, send_mail
 from rogerthat.utils.channel import send_message
 from solution_server_settings import get_solution_server_settings
 from solutions import translate
@@ -426,25 +423,17 @@ def _pick_city_wide_lottery_winner(service_user, sln_cwl_lottery_key):
         to_emails = sln_settings.inbox_mail_forwarders
         if to_emails:
             solution_server_settings = get_solution_server_settings()
-            msg = MIMEMultipart('mixed')
-            msg['Subject'] = 'Winnaars gemeentelijke tombola' 
-            msg['From'] = solution_server_settings.shop_export_email
-            msg['To'] = ','.join(to_emails)
-            msg["Reply-To"] = solution_server_settings.shop_no_reply_email
-            body = MIMEText("""Beste,
+            subject = 'Winnaars gemeentelijke tombola'
+            body = """Beste,
+Volgende mensen hebben gewonnen met de tombola: %s
 
 
-        Volgende mensen hebben gewonnen met de tombola: %s
+Met vriendelijke groeten,
 
+Het Onze Stad App Team
+""" % winner_text
 
-        Met vriendelijke groeten,
-
-        Het Onze Stad App Team
-        """ % winner_text, 'plain', 'utf-8')
-            msg.attach(body)
-
-            server_settings = get_server_settings()
-            send_mail_via_mime(server_settings.senderEmail, to_emails, msg)
+            send_mail(solution_server_settings.shop_export_email, to_emails, subject, body)
 
     xg_on = db.create_transaction_options(xg=True)
     db.run_in_transaction_options(xg_on, trans)

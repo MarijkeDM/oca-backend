@@ -73,11 +73,10 @@ def get_news(cursor=None, service_identity=None):
         if scheduled_item:
             on_facebook = scheduled_item.broadcast_on_facebook
             on_twitter = scheduled_item.broadcast_on_twitter
+            facebook_access_token = scheduled_item.facebook_access_token
+            result_item = NewsBroadcastItemTO.from_news_item_to(news_item, on_facebook, on_twitter)
         else:
-            on_facebook = False
-            on_twitter = False
-
-        result_item = NewsBroadcastItemTO.from_news_item_to(news_item, on_facebook, on_twitter)
+            result_item = NewsBroadcastItemTO.from_news_item_to(news_item)
         result.result.append(result_item)
 
     return result
@@ -323,17 +322,22 @@ def schedule_post_to_social_media(service_user, host, on_facebook, on_twitter,
     if scheduled_at < 1:
         return
 
-    # try to extend facebook access token first
-    try:
-        if not facebook_access_token:
-            raise ValueError('facebook access token is not provided, %s, news id: %d' % (service_user, news_id))
-        facebook_access_token = facebook.extend_access_token(host, facebook_access_token)
-    except:
-        logging.error('Cannot get an extended facebook access token', exc_info=True)
-
     scheduled_broadcast = get_scheduled_broadcast(news_id, service_user, create=True)
     if scheduled_broadcast.timestamp == scheduled_at:
         return
+
+    if on_facebook:
+        if not facebook_access_token:
+            if scheduled_broadcast.facebook_access_token:
+                facebook_access_token = scheduled_broadcast.facebook_access_token
+            else:
+                raise ValueError('facebook access token is not provided, %s, news id: %d' % (service_user, news_id))
+
+        # try to extend facebook access token first
+        try:
+            facebook_access_token = facebook.extend_access_token(host, facebook_access_token)
+        except:
+            logging.error('Cannot get an extended facebook access token', exc_info=True)
 
     if scheduled_broadcast.scheduled_task_name:
         # remove the old scheduled task

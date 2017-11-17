@@ -1252,12 +1252,16 @@ $(function () {
         }
     }
 
-    function uploadImage(popupHeader, updateUrl, width, height, successCallback) {
+    function uploadImage(popupHeader, updateUrl, width, height, successCallback, circle_preview) {
         var html = $.tmpl(templates['settings/upload_image'], {
-            header: popupHeader
+            header: popupHeader,
+            width: width,
+            height: height,
+            circle_preview: circle_preview,
         });
         var modal = sln.createModal(html);
         var imageElem = $('#avatarUpload', modal);
+        var imagePreview = $('.cropped_image_preview img', modal);
         var selectedFile = null;
         $('#newAvatar', modal).change(fileSelected);
 
@@ -1269,9 +1273,12 @@ $(function () {
                 autoCropArea: 1.0,
                 minContainerWidth: width,
                 minContainerHeight: height,
-                aspectRatio: width / height
+                aspectRatio: width / height,
+                preview: '.cropped_image_preview'
             };
             sln.readFile(this, imageElem, 'dataURL', function () {
+                imagePreview.parent().show();
+                imagePreview.attr('src', imageElem.attr('src'));
                 imageElem.cropper('destroy');
                 imageElem.cropper(CROP_OPTIONS);
             });
@@ -1401,9 +1408,8 @@ $(function () {
         if (url) {
             updateUrl = url;
         }
-        uploadImage(popupHeader, updateUrl, previewWidth, previewHeight, null);
+        uploadImage(popupHeader, updateUrl, previewWidth, previewHeight, null, true);
     }
-
 
     function moveElementInArray(array, old_index, new_index) {
         if (new_index >= array.length) {
@@ -1476,6 +1482,9 @@ $(function () {
                 moveElementInArray(broadcastOptions.editable_broadcast_types, oldIndex, newIndex);
                 renderBroadcastSettings();
             });
+            listElem.find('button[data-action=delete]').click(function() {
+                addOrRemoveBroadcastType($(this).data('value'), true);
+            });
             $('#btn-save-broadcast-settings').click(saveBroadcastSettings);
         });
     }
@@ -1484,23 +1493,44 @@ $(function () {
         var broadcastTypeInput = $('#settings_extra_broadcast_type');
         var broadcastType = broadcastTypeInput.val().trim();
 
-        if(broadcastType) {
-            sln.call({
-                url: '/common/settings/broadcast/add_type',
-                type: 'POST',
-                data: {
-                    broadcast_type: broadcastType
-                },
-                success: function(data) {
-                    if(data.success) {
-                        broadcastTypeInput.val('');
-                        $('#settings_add_extra_broadcast_type').attr('disabled', true);
-                        LocalCache.broadcastOptions = null;
-                        renderBroadcastSettings();
-                    }
-                },
-                error: sln.showAjaxError
-            });
+        addOrRemoveBroadcastType(broadcastType, false, function() {
+            broadcastTypeInput.val('');
+            $('#settings_add_extra_broadcast_type').attr('disabled', true);
+        });
+    }
+
+    function addOrRemoveBroadcastType(broadcastType, shouldDelete, callback) {
+        function doAddOrRemove() {
+            if (broadcastType) {
+                sln.call({
+                    url: '/common/settings/broadcast/add_or_remove_type',
+                    type: 'POST',
+                    showProcessing: true,
+                    data: {
+                        broadcast_type: broadcastType,
+                        delete: !!shouldDelete
+                    },
+                    success: function(data) {
+                        if(data.success) {
+                            if(typeof callback === 'function') {
+                                callback();
+                            }
+                            LocalCache.broadcastOptions = null;
+                            renderBroadcastSettings();
+                        } else {
+                            sln.alert(T[sln.errormsg]);
+                        }
+                    },
+                    error: sln.showAjaxError
+                });
+            }
+        }
+
+        if (shouldDelete) {
+            var confirmMessage = CommonTranslations.confirm_delete_x.replace('%(x)s', broadcastType);
+            sln.confirm(confirmMessage, doAddOrRemove);
+        } else {
+            doAddOrRemove();
         }
     }
 

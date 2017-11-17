@@ -83,7 +83,7 @@
                         <div id="tab2" style="display: none;">
                             <div class="control-group">
                                 <div class="controls">
-                                    <h4>{% translate language, "common", "enterprise" %}</h4>
+                                    <h4>{% translate language, "common", "enterprise" %}/{% translate language, "common", "association" %}</h4>
                                 </div>
                             </div>
                             <div id="enterprise">
@@ -97,6 +97,18 @@
                                     <label for="enterprise_name" class="control-label">{% translate language, "common", "reservation-name" %}</label>
                                     <div class="controls">
                                         <input id="enterprise_name" type="text" class="input-block-level" minlength="3" maxlength="50" required/>
+                                    </div>
+                                </div>
+                                <div class="control-group">
+                                    <label for="enterprise_user_email" class="control-label">{% translate language, "common", "Email" %}</label>
+                                    <div class="controls">
+                                        <input id="enterprise_user_email" type="email" pattern="[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?" class="input-block-level" required/>
+                                    </div>
+                                </div>
+                                <div class="control-group">
+                                    <label for="enterprise_telephone" class="control-label">{% translate language, "common", "Phone number" %}</label>
+                                    <div class="controls">
+                                        <input id="enterprise_telephone" type="tel" pattern="^[0-9\-\+\s\(\)]*$" class="input-block-level" required/>
                                     </div>
                                 </div>
                                 <div class="control-group">
@@ -117,61 +129,61 @@
                                         <input id="enterprise_city" type="text" class="input-block-level"/>
                                     </div>
                                 </div>
+                                <div class="control-group">
+                                    <label for="enterprise_website" class="control-label">{% translate language, "common", "Website" %}</label>
+                                    <div class="controls">
+                                        <input id="enterprise_website" type="text" class="input-block-level"/>
+                                    </div>
+                                </div>
+                                <div class="control-group">
+                                    <label for="enterprise_facebook_page" class="control-label">{% translate language, "common", "Facebook page" %}</label>
+                                    <div class="controls">
+                                        <input id="enterprise_facebook_page" type="text" class="input-block-level"/>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div id="tab3" style="display: none;">
                             <div class="control-group">
                                 <div class="controls">
-                                    <h4>{% translate language, "common", "entrepreneur" %}</h4>
+                                    <h4>{% translate language, "common", "contact" %}</h4>
                                 </div>
                             </div>
-                            <div id="entrepreneur">
+                            <div id="contact">
                                 <div class="control-group">
-                                    <label for="entrepreneur_name" class="control-label">{% translate language, "common", "reservation-name" %}</label>
+                                    <label for="contact_name" class="control-label">{% translate language, "common", "reservation-name" %}</label>
                                     <div class="controls">
-                                        <input id="entrepreneur_name" class="input-block-level" type="text" minlength="3" maxlength="50" required/>
+                                        <input id="contact_name" class="input-block-level" type="text" minlength="3" maxlength="50" required/>
                                     </div>
                                 </div>
                                 <div class="control-group">
-                                    <label for="entrepreneur_address1" class="control-label">{% translate language, "common", "address" %}</label>
+                                    <label for="contact_address1" class="control-label">{% translate language, "common", "address" %}</label>
                                     <div class="controls">
-                                        <input id="entrepreneur_address1" type="text" class="input-block-level"/>
+                                        <input id="contact_address1" type="text" class="input-block-level"/>
                                     </div>
                                 </div>
                                 <div class="control-group">
-                                    <label for="entrepreneur_zip_code" class="control-label">{% translate language, "common", "zip_code" %}</label>
+                                    <label for="contact_zip_code" class="control-label">{% translate language, "common", "zip_code" %}</label>
                                     <div class="controls">
-                                        <input id="entrepreneur_zip_code" type="number" class="input-block-level"/>
+                                        <input id="contact_zip_code" type="number" class="input-block-level"/>
                                     </div>
                                 </div>
                                 <div class="control-group">
-                                    <label for="entrepreneur_city" class="control-label">{% translate language, "common", "city" %}</label>
+                                    <label for="contact_city" class="control-label">{% translate language, "common", "city" %}</label>
                                     <div class="controls">
-                                        <input id="entrepreneur_city" type="text" class="input-block-level" required/>
+                                        <input id="contact_city" type="text" class="input-block-level" required/>
                                     </div>
                                 </div>
                                 <div class="control-group">
-                                    <label for="entrepreneur_user_email" class="control-label">{% translate language, "common", "Email" %}</label>
+                                    <label for="contact_user_email" class="control-label">{% translate language, "common", "Email" %}</label>
                                     <div class="controls">
-                                        <input id="entrepreneur_user_email" type="email" pattern="[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?" class="input-block-level" required/>
+                                        <input id="contact_user_email" type="email" pattern="[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?" class="input-block-level" required/>
                                     </div>
                                 </div>
                                 <div class="control-group">
-                                    <label for="entrepreneur_telephone" class="control-label">{% translate language, "common", "Phone number" %}</label>
+                                    <label for="contact_telephone" class="control-label">{% translate language, "common", "Phone number" %}</label>
                                     <div class="controls">
-                                        <input id="entrepreneur_telephone" type="tel" pattern="^[0-9\-\+\s\(\)]*$" class="input-block-level" required/>
-                                    </div>
-                                </div>
-                                <div class="control-group">
-                                    <label for="entrepreneur_website" class="control-label">{% translate language, "common", "Website" %}</label>
-                                    <div class="controls">
-                                        <input id="entrepreneur_website" type="text" class="input-block-level"/>
-                                    </div>
-                                </div>
-                                <div class="control-group">
-                                    <label for="entrepreneur_facebook_page" class="control-label">{% translate language, "common", "Facebook page" %}</label>
-                                    <div class="controls">
-                                        <input id="entrepreneur_facebook_page" type="text" class="input-block-level"/>
+                                        <input id="contact_telephone" type="tel" pattern="^[0-9\-\+\s\(\)]*$" class="input-block-level" required/>
                                     </div>
                                 </div>
                             </div>

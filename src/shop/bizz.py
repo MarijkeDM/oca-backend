@@ -16,41 +16,36 @@
 # @@license_version:1.2@@
 
 import base64
+from collections import OrderedDict
+from contextlib import closing
 import csv
 import datetime
+from functools import partial
 import hashlib
 import json
 import logging
 import os
 import sys
+from types import NoneType
 import urllib
 import urlparse
-from collections import OrderedDict
-from contextlib import closing
-from email.mime.application import MIMEApplication
-from email.mime.image import MIMEImage
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from functools import partial
-from types import NoneType
+
+from PIL.Image import Image
+from dateutil.relativedelta import relativedelta
 
 from apiclient.discovery import build
 from apiclient.errors import HttpError
+from babel.dates import format_datetime, get_timezone, format_date
 from google.appengine.api import search, images, users as gusers
 from google.appengine.ext import deferred, db
-
 import httplib2
-import stripe
-from PIL.Image import Image
-from babel.dates import format_datetime, get_timezone, format_date
-from dateutil.relativedelta import relativedelta
 from mcfw.cache import cached
 from mcfw.properties import azzert
 from mcfw.rpc import returns, arguments, serialize_complex_value
 from mcfw.utils import normalize_search_string, chunks
 from oauth2client.appengine import OAuth2Decorator
 from oauth2client.client import HttpAccessTokenRefreshError
-from rogerthat.bizz.app import add_auto_connected_services, get_app
+from rogerthat.bizz.app import get_app
 from rogerthat.bizz.job.app_broadcast import test_send_app_broadcast, send_app_broadcast
 from rogerthat.bizz.rtemail import EMAIL_REGEX
 from rogerthat.consts import WEEK, SCHEDULED_QUEUE, FAST_QUEUE, \
@@ -61,14 +56,14 @@ from rogerthat.dal.profile import get_service_or_user_profile
 from rogerthat.dal.service import get_default_service_identity
 from rogerthat.exceptions.login import AlreadyUsedUrlException, InvalidUrlException, ExpiredUrlException
 from rogerthat.models import App, ServiceIdentity, ServiceIdentityStatistic, ServiceProfile, UserProfile
-from rogerthat.models.properties.app import AutoConnectedService
+from rogerthat.restapi.user import get_reset_password_url_params
 from rogerthat.rpc import users
 from rogerthat.rpc.rpc import rpc_items
-from rogerthat.restapi.user import get_reset_password_url_params
 from rogerthat.settings import get_server_settings
 from rogerthat.to.service import UserDetailsTO
 from rogerthat.translations import DEFAULT_LANGUAGE
-from rogerthat.utils import bizz_check, now, send_mail_via_mime, channel, get_epoch_from_datetime, send_mail
+from rogerthat.utils import bizz_check, now, channel, get_epoch_from_datetime, send_mail
+from rogerthat.utils.app import create_app_user_by_email
 from rogerthat.utils.crypto import encrypt, decrypt
 from rogerthat.utils.location import geo_code, GeoCodeStatusException, GeoCodeZeroResultsException, \
     address_to_coordinates, GeoCodeException
@@ -95,10 +90,11 @@ from shop.to import CustomerChargeTO, CustomerChargesTO, BoundsTO, ProspectTO, A
 from solution_server_settings import get_solution_server_settings
 from solution_server_settings.consts import SHOP_OAUTH_CLIENT_ID, SHOP_OAUTH_CLIENT_SECRET
 from solutions import SOLUTION_COMMON, translate as common_translate
-from solutions.common.bizz import SolutionModule, common_provision, OrganizationType
+from solutions.common.bizz import SolutionModule, common_provision
 from solutions.common.bizz.grecaptcha import recaptcha_verify
-from solutions.common.bizz.inbox import create_solution_inbox_message
 from solutions.common.bizz.jobs import delete_solution
+from solutions.common.bizz.service import new_inbox_message, send_signup_update_messages
+from solutions.common.bizz.messaging import send_inbox_forwarders_message
 from solutions.common.dal import get_solution_settings, get_solution_settings_or_identity_settings
 from solutions.common.dal.hints import get_solution_hints
 from solutions.common.models import SolutionInboxMessage
@@ -107,7 +103,9 @@ from solutions.common.models.qanda import Question
 from solutions.common.models.statistics import AppBroadcastStatistics
 from solutions.common.to import ProvisionResponseTO, SolutionInboxMessageTO
 from solutions.flex.bizz import create_flex_service
+import stripe
 from xhtml2pdf import pisa
+
 
 try:
     from cStringIO import StringIO
@@ -735,22 +733,6 @@ def put_service(customer_or_id, service, skip_module_check=False, search_enabled
     return r
 
 
-def auto_connect_city_service(service_email, app_id):
-    service_user = users.User(service_email)
-    service_identity_email = create_service_identity_user(service_user).email()
-    app = App.get_by_key_name(app_id)
-    if app.type != App.APP_TYPE_CITY_APP:
-        logging.debug('Not auto-connecting %s because "%s" is not a city app', service_email, app_id)
-        return
-    if app.demo:
-        logging.debug('Not auto-connecting %s because "%s" is a demo app', service_email, app_id)
-        return
-    connected_services = app.auto_connected_services
-    if not connected_services.get(service_identity_email):
-        auto_connected_service = AutoConnectedService.create(service_identity_email, False, None, None)
-        add_auto_connected_services(app_id, [auto_connected_service])
-
-
 @arguments(customer_key=db.Key, user_email=unicode, r=ProvisionResponseTO, is_redeploy=bool, app_ids=[unicode],
            broadcast_to_users=[users.User])
 def _after_service_saved(customer_key, user_email, r, is_redeploy, app_ids, broadcast_to_users):
@@ -821,21 +803,17 @@ def _after_service_saved(customer_key, user_email, r, is_redeploy, app_ids, broa
                                                     '/customers/setpassword', url_params)
 
             # TODO: email with OSA style in header, footer
-            with closing(StringIO()) as sb:
-                sb.write(
-                    shop_translate(customer.language, 'dear_name', name=contact.first_name + ' ' + contact.last_name).encode('utf-8'))
-                sb.write('\n\n')
-                sb.write(shop_translate(customer.language, 'your_service_created').encode('utf-8'))
-                sb.write('\n\n')
-                sb.write(shop_translate(customer.language, 'login_with_credentials', login_url=login_url,
-                                        login=user_email, password=r.password).encode('utf-8'))
-                sb.write('\n')
-                sb.write(shop_translate(customer.language, 'do_you_want_another_password', link=reset_password_link))
-                sb.write('\n\n')
-                sb.write(shop_translate(customer.language, 'with_regards').encode('utf-8'))
-                sb.write('\n\n')
-                sb.write(shop_translate(customer.language, 'the_osa_team').encode('utf-8'))
-                body = sb.getvalue().replace('\n', '<br/>')
+            params = {
+                'language': customer.language,
+                'name': contact.first_name + ' ' + contact.last_name,
+                'login_url': login_url,
+                'user_email': user_email,
+                'password': r.password,
+                'reset_password_link': reset_password_link
+            }
+
+            text_body = SHOP_JINJA_ENVIRONMENT.get_template('emails/login_information_email.tmpl').render(params)
+            html_body = SHOP_JINJA_ENVIRONMENT.get_template('emails/login_information_email_html.tmpl').render(params)
 
             # TODO: Change the new customer password handling, sending passwords via email is a serious security issue.
 
@@ -844,19 +822,11 @@ def _after_service_saved(customer_key, user_email, r, is_redeploy, app_ids, broa
             app = get_app_by_id(customer.app_id)
             from_email = '%s <%s>' % (app.name, app.get_contact_email_address())
 
-            msg = MIMEMultipart('alternative')
-            msg['Subject'] = subject
-            msg['From'] = from_email
-            msg['To'] = user_email
-            msg.attach(MIMEText(body, 'html', 'utf-8'))
-            send_mail_via_mime(from_email, [user_email], msg, transactional=True)
+            send_mail(from_email, user_email, subject, text_body, html=html_body)
         if to_put:
             db.put(to_put)
-        return customer
 
-    customer = run_in_xg_transaction(trans)
-    if customer.organization_type == OrganizationType.CITY:
-        auto_connect_city_service(customer.service_email, customer.app_id)
+    run_in_xg_transaction(trans)
 
 
 @returns([Invoice])
@@ -1071,17 +1041,10 @@ def send_order_email(order_key, google_user):
         deferred.defer(send_order_email, order_key, google_user, _countdown=60, _queue=SCHEDULED_QUEUE)
         return
 
-    server_settings = get_server_settings()
     solution_server_settings = get_solution_server_settings()
     contact = order.contact
 
-    msg = MIMEMultipart('alternative')
-    msg['Subject'] = shop_translate(customer.language, 'osa_order_email_subject', order_number=order.order_number)
-    msg['From'] = solution_server_settings.shop_billing_email
-    msg['To'] = contact.email
-    msg["Reply-To"] = solution_server_settings.shop_reply_to_email
-    if google_user:
-        msg["Cc"] = google_user.email()
+    subject = shop_translate(customer.language, 'osa_order_email_subject', order_number=order.order_number)
 
     # TODO: (?) Email with OSA styling (header, footer)
     with closing(StringIO()) as sb:
@@ -1102,13 +1065,11 @@ def send_order_email(order_key, google_user):
         sb.write('\n\n')
         sb.write(shop_translate(customer.language, 'the_osa_team').encode('utf-8'))
         body = sb.getvalue()
-    body = MIMEText(body, 'plain', 'utf-8')
-    msg.attach(body)
 
     to_ = [contact.email]
     if google_user:
         to_.append(google_user.email())
-    send_mail_via_mime(server_settings.senderEmail, to_, msg)
+    send_mail(solution_server_settings.shop_billing_email, to_, subject, body)
 
 
 @returns()
@@ -1251,12 +1212,7 @@ def send_invoice_email(customer_key, invoice_key, contact_key, payment_type, tra
 
     solution_server_settings = get_solution_server_settings()
 
-    msg = MIMEMultipart('mixed')
-    msg['Subject'] = shop_translate(customer.language, 'osa_new_invoice')
-    msg['From'] = solution_server_settings.shop_billing_email
-    msg['To'] = contact.email.encode('utf-8')
-    msg['Bcc'] = ', '.join(solution_server_settings.shop_payment_admin_emails)
-    msg["Reply-To"] = solution_server_settings.shop_reply_to_email
+    subject = shop_translate(customer.language, 'osa_new_invoice')
     if payment_type != Invoice.PAYMENT_MANUAL_AFTER:
         payment_notice = shop_translate(customer.language, 'payment_already_satisfied')
     else:
@@ -1291,50 +1247,23 @@ def send_invoice_email(customer_key, invoice_key, contact_key, payment_type, tra
         sb.write(shop_translate(customer.language, 'the_osa_team').encode('utf-8'))
         body = sb.getvalue()
 
-    body = MIMEText(body, 'plain', 'utf-8')
-    msg.attach(body)
-
+    attachments = None
     if payment_type in (Invoice.PAYMENT_STRIPE, Invoice.PAYMENT_ON_SITE, Invoice.PAYMENT_MANUAL):
         pass
     elif payment_type == Invoice.PAYMENT_MANUAL_AFTER:
-        invoice_att = MIMEApplication(invoice.pdf, _subtype="pdf")
-        invoice_att.add_header('Content-Disposition', 'attachment', filename="invoice-%s.pdf" % invoice.invoice_number)
-        msg.attach(invoice_att)
+        attachments = []
+        attachments.append(("invoice-%s.pdf" % invoice.invoice_number,
+                            base64.b64encode(invoice.pdf)))
+
         if customer.legal_entity.is_mobicage:
-            img = MIMEImage(transfer_doc_png)
-            img.add_header('Content-Disposition', 'attachment', filename="payment.png")
-            msg.attach(img)
+            attachments.append(("payment.png",
+                                base64.b64encode(transfer_doc_png)))
     else:
         raise ValueError("Unknown payment_type received.")
 
-    settings = get_server_settings()
     to = [contact.email]
     to.extend(solution_server_settings.shop_payment_admin_emails)
-    send_mail_via_mime(settings.senderEmail, to, msg)
-
-
-def send_email(subject, from_email, to_emails, bcc_emails, reply_to, body_text, attachment=None, attachment_type=None,
-               attachment_name=None, send_in_deferred=True):
-    """
-    Args:
-        attachment_type(str): Must only contain the MIME subtype (e.g. pdf, png)
-    """
-    msg = MIMEMultipart('mixed')
-    msg['Subject'] = subject
-    msg['From'] = from_email
-    msg['To'] = ','.join(to_emails)
-    msg['Bcc'] = ','.join(bcc_emails)
-    msg["Reply-To"] = reply_to
-    body = MIMEText(body_text.encode('utf-8'), 'plain', 'utf-8')
-    msg.attach(body)
-
-    if attachment:
-        att = MIMEApplication(attachment, _subtype=attachment_type)
-        att.add_header('Content-Disposition', 'attachment', filename=attachment_name)
-        msg.attach(att)
-
-    settings = get_server_settings()
-    send_mail_via_mime(settings.senderEmail, to_emails, msg, send_in_deferred=send_in_deferred)
+    send_mail(solution_server_settings.shop_billing_email, to, subject, body, attachments=attachments)
 
 
 def vacuum_service_modules_by_subscription(customer_id):
@@ -1525,7 +1454,6 @@ def send_payment_info(customer_id, order_number, charge_id, google_user):
 
     transfer_doc_png = buf.getvalue()
 
-    settings = get_server_settings()
     order, customer = db.get((Order.create_key(customer_id, order_number), Customer.create_key(customer_id)))
     contact = order.contact
     to = contact.email
@@ -1535,12 +1463,6 @@ def send_payment_info(customer_id, order_number, charge_id, google_user):
                                  subject=subject)
 
     solution_server_settings = get_solution_server_settings()
-
-    msg = MIMEMultipart('mixed')
-    msg['Subject'] = subject
-    msg['From'] = solution_server_settings.shop_billing_email
-    msg['To'] = to
-    msg["Reply-To"] = solution_server_settings.shop_reply_to_email
 
     with closing(StringIO()) as sb:
         sb.write(shop_translate(customer.language, 'dear_name', name=(
@@ -1569,21 +1491,18 @@ def send_payment_info(customer_id, order_number, charge_id, google_user):
         sb.write(shop_translate(customer.language, 'the_osa_team').encode('utf-8'))
         body = sb.getvalue()
 
-    body = MIMEText(body, 'plain', 'utf-8')
-    msg.attach(body)
+    attachments = []
     with closing(StringIO()) as pdf_stream:
         generate_order_or_invoice_pdf(pdf_stream, customer, order, None, True,
                                       "data:image/png;base64,%s" % base64.b64encode(transfer_doc_png),
                                       charge=charge)
-        pro_forma_invoice = MIMEApplication(pdf_stream.getvalue(), _subtype="pdf")
+        attachments.append(("pro-forma-invoice.pdf",
+                             base64.b64encode(pdf_stream.getvalue())))
 
-    pro_forma_invoice.add_header('Content-Disposition', 'attachment', filename="pro-forma-invoice.pdf")
-    msg.attach(pro_forma_invoice)
-    img = MIMEImage(transfer_doc_png)
-    img.add_header('Content-Disposition', 'attachment', filename="payment.png")
-    msg.attach(img)
+    attachments.append(("payment.png",
+                        base64.b64encode(transfer_doc_png)))
 
-    send_mail_via_mime(settings.senderEmail, to, msg)
+    send_mail(solution_server_settings.shop_billing_email, to, subject, body, attachments=attachments)
 
 
 def generate_order_or_invoice_pdf(output_stream, customer, order, invoice=None, pro_forma=False,
@@ -2539,10 +2458,15 @@ def export_customers_csv(google_user):
         current_date = format_date(datetime.date.today(), locale=DEFAULT_LANGUAGE)
 
         solution_server_settings = get_solution_server_settings()
-        send_email('Customers export %s' % current_date, solution_server_settings.shop_export_email,
-                   [google_user.email()], [], solution_server_settings.shop_no_reply_email,
-                   u'The exported customer list of %s can be found in the attachment of this email.' % current_date,
-                   csv_string.getvalue(), 'csv', 'Customers export %s.csv' % current_date)
+        subject = 'Customers export %s' % current_date
+        message = u'The exported customer list of %s can be found in the attachment of this email.' % current_date
+
+        attachments = []
+        attachments.append(('Customers export %s.csv' % current_date,
+                            base64.b64encode(csv_string.getvalue())))
+
+        send_mail(solution_server_settings.shop_export_email, [google_user.email()], subject, message,
+                  attachments=attachments)
         if DEBUG:
             logging.info(csv_string.getvalue())
 
@@ -2655,7 +2579,7 @@ def put_customer_with_service(service, name, address1, address2, zip_code, city,
     return customer, email_changed, is_new_association
 
 
-def get_signup_summary(lang, customer_signup, app_id):
+def get_signup_summary(lang, customer_signup):
     """Get a translated signup summary.
 
     Args:
@@ -2679,10 +2603,12 @@ def get_signup_summary(lang, customer_signup, app_id):
     summary += u'{}: {}\n'.format(trans('reservation-name'), customer_signup.company_name)
     summary += u'{}: {}\n'.format(trans('address'), customer_signup.company_address1)
     summary += u'{}: {}\n'.format(trans('zip_code'), customer_signup.company_zip_code)
+    summary += u'{}: {}\n'.format(trans('Email'), customer_signup.company_email)
+    summary += u'{}: {}\n'.format(trans('Phone number'), customer_signup.company_telephone)
     summary += u'{}: {}\n'.format(trans('city'), customer_signup.company_city)
     summary += u'{}: {}\n'.format(trans('vat'), customer_signup.company_vat)
-    summary += u'{}: {}\n'.format(trans('Website'), customer_signup.customer_website)
-    summary += u'{}: {}\n'.format(trans('Facebook page'), customer_signup.customer_facebook_page)
+    summary += u'{}: {}\n'.format(trans('Website'), customer_signup.company_website)
+    summary += u'{}: {}\n'.format(trans('Facebook page'), customer_signup.company_facebook_page)
 
     summary += u'\n{}\n'.format(trans('business-manager'))
     summary += u'{}: {}\n'.format(trans('reservation-name'), customer_signup.customer_name)
@@ -2697,26 +2623,20 @@ def get_signup_summary(lang, customer_signup, app_id):
 
 def _send_new_customer_signup_message(service_user, customer_signup):
     signup_key = unicode(customer_signup.key())
-
-    service_identity = ServiceIdentity.DEFAULT
     sln_settings = get_solution_settings(service_user)
-    sln_i_settings = get_solution_settings_or_identity_settings(sln_settings, service_identity)
+    summary = get_signup_summary(sln_settings.main_language, customer_signup)
 
-    lang = sln_settings.main_language
-    si = get_default_service_identity(service_user)
-    summary = get_signup_summary(lang, customer_signup, si.app_id)
+    message = new_inbox_message(sln_settings, summary,
+                                category=SolutionInboxMessage.CATEGORY_CUSTOMER_SIGNUP,
+                                category_key=signup_key)
 
-    user_details = UserDetailsTO.create(service_user.email(), si.name, lang, si.avatarUrl, si.app_id)
-    message = create_solution_inbox_message(service_user, service_identity,
-                                            SolutionInboxMessage.CATEGORY_CUSTOMER_SIGNUP,
-                                            signup_key, True, [user_details], now(), summary, False)
+    app_user = create_app_user_by_email(service_user.email(), customer_signup.city_customer.app_id)
+    send_inbox_forwarders_message(service_user, ServiceIdentity.DEFAULT, app_user, summary, {
+        'if_name': customer_signup.customer_name,
+        'if_email': customer_signup.customer_email
+    }, message_key=message.solution_inbox_message_key, reply_enabled=message.reply_enabled)
 
-    message_to = SolutionInboxMessageTO.fromModel(message, sln_settings, sln_i_settings, True)
-    sm_data = [{u'type': u'solutions.common.customer.signup.update'},
-               {u'type': u'solutions.common.messaging.update',
-                u'message': serialize_complex_value(message_to, SolutionInboxMessageTO, False)}]
-
-    channel.send_message(service_user, sm_data, service_identity=service_identity)
+    send_signup_update_messages(sln_settings, message)
     return message.solution_inbox_message_key
 
 
@@ -2728,7 +2648,6 @@ def calculate_signup_url_digest(data):
 
 
 def send_signup_verification_email(city_customer, signup, host=None):
-    from solutions.common.bizz import send_email
     from solutions.common.handlers import JINJA_ENVIRONMENT
 
     data = dict(c=city_customer.service_user.email(), s=unicode(signup.key()), t=signup.timestamp)
@@ -2750,7 +2669,8 @@ def send_signup_verification_email(city_customer, signup, host=None):
     }
     message = JINJA_ENVIRONMENT.get_template('emails/signup_verification.tmpl').render(params)
     html_message = JINJA_ENVIRONMENT.get_template('emails/signup_verification_html.tmpl').render(params)
-    send_email(subject, city_customer.user_email, [signup.customer_email], [], None, message, html_body=html_message)
+    city_from = '%s <%s>' % (city_customer.name, city_customer.user_email)
+    send_mail(city_from, signup.customer_email, subject, message, html=html_message)
 
 
 @returns()
@@ -2760,7 +2680,7 @@ def create_customer_signup(city_customer_id, company, customer, recaptcha_token,
         raise BusinessException('Cannot verify recaptcha response')
 
     city_customer = Customer.get_by_id(city_customer_id)
-    user_email = customer.user_email.strip().lower()
+    user_email = company.user_email.strip().lower()
     signup = CustomerSignup(parent=city_customer)
 
     signup.company_name = company.name
@@ -2768,16 +2688,22 @@ def create_customer_signup(city_customer_id, company, customer, recaptcha_token,
     signup.company_address1 = company.address1
     signup.company_zip_code = company.zip_code
     signup.company_city = company.city
-    signup.company_vat = company.vat
+    signup.company_email = user_email
+    signup.company_telephone = company.telephone
+    signup.company_website = company.website
+    signup.company_facebook_page = company.facebook_page
+
+    try:
+        signup.company_vat = company.vat and normalize_vat(city_customer.country, company.vat)
+    except BusinessException:
+        raise BusinessException('vat_invalid')
 
     signup.customer_name = customer.name
     signup.customer_address1 = customer.address1
     signup.customer_zip_code = customer.zip_code
     signup.customer_city = customer.city
-    signup.customer_email = user_email
+    signup.customer_email = customer.user_email.strip().lower()
     signup.customer_telephone = customer.telephone
-    signup.customer_website = customer.website
-    signup.customer_facebook_page = customer.facebook_page
 
     for other_signup in CustomerSignup.list_pending_by_customer_email(user_email):
         # check if the same information has been used in a pending signup

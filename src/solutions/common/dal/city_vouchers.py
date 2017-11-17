@@ -16,8 +16,28 @@
 # @@license_version:1.2@@
 
 from mcfw.rpc import returns, arguments
+from rogerthat.utils import today
 from solutions.common.models.city_vouchers import SolutionCityVoucherQRCodeExport, SolutionCityVoucher, \
-    SolutionCityVoucherExport
+    SolutionCityVoucherExport, SolutionCityVoucherSettings
+
+
+@returns(SolutionCityVoucherSettings)
+@arguments(app_id=unicode)
+def get_city_vouchers_settings(app_id):
+    key = SolutionCityVoucherSettings.create_key(app_id)
+    return SolutionCityVoucherSettings.get(key)
+
+
+@returns(tuple)
+@arguments(app_id=unicode, cursor=unicode, limit=int)
+def get_expired_vouchers(app_id, cursor=None, limit=50):
+    parnet_key = SolutionCityVoucher.create_parent_key(app_id)
+    qry = SolutionCityVoucher.all().with_cursor(cursor).ancestor(parnet_key)
+    qry.filter('expiration_date <=', today()).order('-expiration_date')
+    data = qry.fetch(limit)
+    new_cursor = unicode(qry.cursor())
+    has_more = new_cursor != cursor
+    return new_cursor, data, has_more
 
 
 @returns(tuple)

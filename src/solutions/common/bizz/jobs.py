@@ -39,13 +39,14 @@ def _delete_solution(service_user, delete_svc):
     identities = [None]
     if sln_settings.identities:
         identities.extend(sln_settings.identities)
-        def trans():
-            service_profile = get_service_profile(service_user, False)
-            for service_identity in identities:
-                deferred.defer(_delete_solution_models, service_user, service_identity, [service_profile.solution, SOLUTION_COMMON], delete_svc, _transactional=True)
-            service_profile.solution = None
-            service_profile.put()
-        db.run_in_transaction(trans)
+
+    def trans():
+        service_profile = get_service_profile(service_user, False)
+        for service_identity in identities:
+            deferred.defer(_delete_solution_models, service_user, service_identity, [service_profile.solution, SOLUTION_COMMON], delete_svc, _transactional=True)
+        service_profile.solution = None
+        service_profile.put()
+    db.run_in_transaction(trans)
 
 
 def _delete_solution_models(service_user, service_identity, solutions, delete_svc):
@@ -60,8 +61,7 @@ def _delete_solution_models(service_user, service_identity, solutions, delete_sv
         else:
             if solutions:
                 deferred.defer(_delete_solution_models, service_user, service_identity, solutions, delete_svc, _transactional=True)
-            else:
-                if delete_svc:
+            elif delete_svc and service_identity is None:
                     deferred.defer(delete_service.job, service_user, service_user, _transactional=True)
             return False
     while db.run_in_transaction(trans):

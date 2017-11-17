@@ -16,16 +16,19 @@
 # @@license_version:1.2@@
 
 from mcfw.restapi import rest
-from mcfw.rpc import returns, arguments
+from mcfw.rpc import returns, arguments, NoneType
 from rogerthat.rpc import users
 from rogerthat.to import ReturnStatusTO, RETURNSTATUS_TO_SUCCESS
+from rogerthat.utils import now
+from solutions.common.bizz import SolutionModule
 from solutions.common.bizz.city_vouchers import create_city_voucher_qr_codes
 from solutions.common.dal import get_solution_settings
 from solutions.common.dal.city_vouchers import get_solution_city_voucher_qr_codes, get_solution_city_vouchers, \
-    get_solution_city_voucher_exports
-from solutions.common.models.city_vouchers import SolutionCityVoucher, SolutionCityVoucherExportMerchant
+    get_solution_city_voucher_exports, get_city_vouchers_settings, get_expired_vouchers
+from solutions.common.models.city_vouchers import SolutionCityVoucher, SolutionCityVoucherExportMerchant, \
+    SolutionCityVoucherSettings
 from solutions.common.to.city_vouchers import SolutionCityVouchersTO, SolutionCityVoucherQRCodeExportsTO, \
-    SolutionCityVoucherTransactionsTO , SolutionCityVoucherExportListTO
+    SolutionCityVoucherTransactionsTO, SolutionCityVoucherExportListTO
 from solutions.common.to.loyalty import SolutionLoyaltyExportTO, SolutionLoyaltyExportListTO
 
 
@@ -35,6 +38,13 @@ from solutions.common.to.loyalty import SolutionLoyaltyExportTO, SolutionLoyalty
 def search_city_vouchers(app_id, search_string, cursor=None):
     cursor_, vouchers, has_more = get_solution_city_vouchers(app_id, search_string, 10, cursor)
     return SolutionCityVouchersTO.fromModel(cursor_, vouchers, has_more)
+
+
+@rest("/common/city/vouchers/expired", "get", read_only_access=True)
+@returns(SolutionCityVouchersTO)
+@arguments(app_id=unicode, cursor=unicode)
+def load_expired_vouchers(app_id, cursor=None):
+    return SolutionCityVouchersTO.fromModel(*get_expired_vouchers(app_id, cursor))
 
 
 @rest("/common/city/vouchers/transactions/load", "get", read_only_access=True)
@@ -71,7 +81,7 @@ def load_city_voucher_export(app_id, cursor=None):
     cursor_, data, has_more = get_solution_city_voucher_exports(app_id, 10, cursor)
     sln_settings = get_solution_settings(service_user)
     d = [SolutionLoyaltyExportTO.from_model(e, sln_settings.main_language) for e in data]
-    return SolutionCityVoucherExportListTO.fromModel(cursor_, d, has_more) 
+    return SolutionCityVoucherExportListTO.fromModel(cursor_, d, has_more)
 
 
 @rest("/common/vouchers/export/list", "get", read_only_access=True)
@@ -88,3 +98,23 @@ def load_loyalty_export_list(cursor=None):
                                             [SolutionLoyaltyExportTO.from_model(e, sln_settings.main_language)
                                              for e in exports_list])
     return to
+
+
+@rest("/common/vouchers/validity/put", "post")
+@returns(ReturnStatusTO)
+@arguments(app_id=unicode, validity=(int, long, NoneType))
+def update_vouchers_validity(app_id, validity):
+    """Sets the vouchers validity in months"""
+    sln_settings = get_solution_settings(users.get_current_user())
+    if SolutionModule.CITY_VOUCHERS not in sln_settings.modules:
+        return ReturnStatusTO.create(False, 'no_permission')
+
+    if isinstance(validity, (int, long)) and validity < 1:
+        return ReturnStatusTO.create(False, 'invalid_validity_period')
+
+    voucher_settings = get_city_vouchers_settings(app_id)
+    if not voucher_settings:
+        voucher_settings = SolutionCityVoucherSettings(key=SolutionCityVoucherSettings.create_key(app_id))
+    voucher_settings.validity = validity
+    voucher_settings.put()
+    return RETURNSTATUS_TO_SUCCESS

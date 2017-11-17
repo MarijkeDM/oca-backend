@@ -35,6 +35,9 @@ class SolutionOrderSettings(db.Model):
     leap_time = db.IntegerProperty(indexed=False, default=15)
     leap_time_type = db.IntegerProperty(indexed=False, default=SECONDS_IN_MINUTE)
 
+    order_ready_message = db.StringProperty(indexed=False, multiline=True)
+    manual_confirmation = db.BooleanProperty(indexed=False, default=False)
+
     @classmethod
     def create_key(cls, service_user):
         return db.Key.from_path(cls.kind(), service_user.email(), parent=parent_key(service_user, SOLUTION_COMMON))

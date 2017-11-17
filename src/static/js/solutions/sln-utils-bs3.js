@@ -17,7 +17,7 @@
  */
 
 var SLN_CONSTS = {
-    LOG_ERROR_URL: "/mobi/rest/system/log_error",
+    LOG_ERROR_URL: "/unauthenticated/mobi/logging/web_error",
     PROCESSING_TIMEOUT: 400
 };
 

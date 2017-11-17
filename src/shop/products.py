@@ -126,7 +126,7 @@ def create_ilos_product(legal_entity_id, code_prefix=''):
 
 def create_xcty_product(legal_entity_id, code_prefix=''):
     p = Product(key_name=code_prefix + Product.PRODUCT_EXTRA_CITY)
-    p.price = 500
+    p.price = 1000
     p.default_count = 1
     p.default = False
     p.possible_counts = range(1, 37)
@@ -139,7 +139,7 @@ def create_xcty_product(legal_entity_id, code_prefix=''):
                                                              Product.PRODUCT_FREE_PRESENCE,
                                                              Product.PRODUCT_FREE_SUBSCRIPTION)])]
     p.picture_url = ""
-    p.visible = bool(code_prefix)  # only for legal entities other than mobicage
+    p.visible = True
     p.legal_entity_id = legal_entity_id
     if code_prefix:
         p.description_translation_key = p.code[len(code_prefix):] + '.description'
@@ -149,7 +149,7 @@ def create_xcty_product(legal_entity_id, code_prefix=''):
 
 def create_xctd_product(legal_entity_id, code_prefix=''):
     p = Product(key_name=code_prefix + 'XCTD')
-    p.price = -500
+    p.price = -1000
     p.default_count = 1
     p.default = False
     p.possible_counts = range(1, 37)
@@ -169,7 +169,7 @@ def create_xctd_product(legal_entity_id, code_prefix=''):
 
 def create_a3ct_product(legal_entity_id, code_prefix=''):
     p = Product(key_name=code_prefix + Product.PRODUCT_ACTION_3_EXTRA_CITIES)
-    p.price = 1000
+    p.price = 2000
     p.default_count = 1
     p.default = False
     p.possible_counts = range(1, 37)

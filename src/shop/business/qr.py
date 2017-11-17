@@ -15,16 +15,16 @@
 #
 # @@license_version:1.2@@
 
+import base64
 import datetime
 import logging
 import zipfile
 
-import xlwt
 from babel.dates import format_date
-from google.appengine.api import users as gusers
-from google.appengine.ext.deferred import deferred
 
 from add_1_monkey_patches import DEBUG
+from google.appengine.api import users as gusers
+from google.appengine.ext.deferred import deferred
 from mcfw.imaging import generate_qr_code
 from mcfw.properties import azzert
 from mcfw.rpc import arguments, returns
@@ -32,9 +32,12 @@ from rogerthat.bizz.profile import generate_unassigned_short_urls
 from rogerthat.dal.app import get_app_by_id
 from rogerthat.settings import get_server_settings
 from rogerthat.translations import DEFAULT_LANGUAGE
-from shop.bizz import send_email, is_admin
+from rogerthat.utils import send_mail
+from shop.bizz import is_admin
 from shop.exceptions import NoPermissionException, AppNotFoundException
 from solution_server_settings import get_solution_server_settings
+import xlwt
+
 
 try:
     from cStringIO import StringIO
@@ -77,14 +80,13 @@ def _generate_unassigned_qr_codes_excel_for_app(app_id, amount, user_email):
     subject = 'Generated QR code links (%d) for %s' % (amount, str(app_id))
     from_email = solution_server_settings.shop_export_email
     to_emails = [user_email]
-    bcc_emails = []
-    reply_to = solution_server_settings.shop_no_reply_email
     body_text = 'See attachment for the requested links to the QR codes.'
-    attachment = excel_file.getvalue()
-    attachment_type = 'vnd.ms-excel'
-    attachment_name = '%s generated QR codes(%d) %s.xls' % (str(app_id), amount, current_date)
-    send_email(subject, from_email, to_emails, bcc_emails, reply_to, body_text, attachment, attachment_type,
-               attachment_name)
+    attachments = []
+    attachments.append(('%s generated QR codes(%d) %s.xls' % (str(app_id), amount, current_date),
+                        base64.b64encode(excel_file.getvalue())))
+    send_mail(from_email, to_emails, subject, body_text, attachments=attachments)
+    
+    
 
 
 def _generate_unassigned_qr_codes_svgs_for_app(app_id, amount, user_email):
@@ -110,11 +112,8 @@ def _generate_unassigned_qr_codes_svgs_for_app(app_id, amount, user_email):
         subject = 'Generated QR code links (%d) for %s' % (amount, str(app_id))
         from_email = solution_server_settings.shop_export_email
         to_emails = [user_email]
-        bcc_emails = []
-        reply_to = solution_server_settings.shop_no_reply_email
         body_text = 'See attachment for the QR codes in SVG format.'
-        attachment = zip_content
-        attachment_type = 'vnd.ms-excel'
-        attachment_name = '%s generated QR codes(%d) %s.xls' % (str(app_id), amount, current_date)
-        send_email(subject, from_email, to_emails, bcc_emails, reply_to, body_text, attachment, attachment_type,
-                   attachment_name)
+        attachments = []
+        attachments.append(('%s generated QR codes(%d) %s.xls' % (str(app_id), amount, current_date),
+                            base64.b64encode(zip_content)))
+        send_mail(from_email, to_emails, subject, body_text, attachments=attachments)

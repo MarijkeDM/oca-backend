@@ -16,6 +16,7 @@
 # @@license_version:1.2@@
 
 from mcfw.properties import unicode_property, long_property, bool_property, typed_property
+from rogerthat.utils import today
 from solutions.common.to.loyalty import SolutionLoyaltyExportTO
 
 
@@ -27,6 +28,10 @@ class SolutionCityVoucherTO(object):
     redeemed_value = long_property('5')
     activated = bool_property('6')
     redeemed = bool_property('7')
+    expiration_date = long_property('8')
+    expired = bool_property('9')
+    owner = unicode_property('10')
+    owner_name = unicode_property('11')
 
     @classmethod
     def fromModel(cls, obj):
@@ -38,7 +43,12 @@ class SolutionCityVoucherTO(object):
         to.redeemed_value = obj.redeemed_value
         to.activated = obj.activated
         to.redeemed = obj.redeemed
+        to.expiration_date = obj.expiration_date
+        to.expired = obj.expired
+        to.owner = obj.owner and obj.owner.email()
+        to.owner_name = obj.owner_name
         return to
+
 
 class SolutionCityVouchersTO(object):
     cursor = unicode_property('1')
@@ -69,7 +79,7 @@ class SolutionCityVoucherTransactionLogTO(object):
 
 
 class SolutionCityVoucherTransactionsTO(SolutionCityVoucherTO):
-    transactions = typed_property('10', SolutionCityVoucherTransactionLogTO, True)
+    transactions = typed_property('transactions', SolutionCityVoucherTransactionLogTO, True)
 
     @classmethod
     def fromModel(cls, obj):
@@ -103,7 +113,7 @@ class SolutionCityVoucherQRCodeExportsTO(object):
         to.has_more = has_more
         to.data = [SolutionCityVoucherQRCodeExportTO.fromModel(d) for d in data]
         return to
-    
+
 
 class SolutionCityVoucherExportListTO(object):
     cursor = unicode_property('1')

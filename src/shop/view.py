@@ -1340,14 +1340,15 @@ def send_reply(question_id, description, author_name):
 
         service_user = users.User(q.author.email())
         sln_settings = get_solution_settings(service_user)
-
-        send_mail(settings.senderEmail, to_email, "RE: %s" % q.title, """Dear,
+        subject = "RE: %s" % q.title
+        message = """Dear,
 
 please login on %s to see the reply for your question titled '%s'.
 
 Kind regards,
 
-The Rogerthat team.""" % (sln_settings.login.email() if sln_settings.login else q.author.email(), q.title), transactional=True)
+The Rogerthat team.""" % (sln_settings.login.email() if sln_settings.login else q.author.email(), q.title)
+        send_mail(settings.senderEmail, to_email, subject, message, transactional=True)
     xg_on = db.create_transaction_options(xg=True)
     db.run_in_transaction_options(xg_on, trans, question)
 
@@ -1360,7 +1361,6 @@ def assign_team_to_question(question_id, team_id):
     user = gusers.get_current_user()
     azzert(user_has_permissions_to_question(user, question))
     team = RegioManagerTeam.get_by_id(team_id)
-
     settings = get_server_settings()
     def trans(q, t):
         q.team_id = t.id
@@ -1370,14 +1370,15 @@ def assign_team_to_question(question_id, team_id):
         if support_manager:
             support_email = support_manager.user.email()
             name = q.get_author_name()
-            send_mail(settings.senderEmail, support_email, q.title, """Please reply to %s (%s) with the following link:
-    %s/internal/shop/questions
+            message = """Please reply to %s (%s) with the following link:
+%s/internal/shop/questions
 
-    Title:
-    %s
+Title:
+%s
 
-    Description:
-    %s""" % (name, q.author, settings.baseUrl, q.title, q.description), transactional=True)
+Description:
+%s""" % (name, q.author, settings.baseUrl, q.title, q.description)
+            send_mail(settings.senderEmail, support_email, q.title, message, transactional=True)
 
     try:
         xg_on = db.create_transaction_options(xg=True)

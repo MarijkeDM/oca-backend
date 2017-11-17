@@ -21,23 +21,22 @@ import time
 
 from babel.dates import format_datetime
 from babel.numbers import format_currency
-from google.appengine.ext import db
-from xhtml2pdf import pisa
 
+from google.appengine.ext import db
+from mcfw.rpc import arguments, returns
 from rogerthat.bizz.job import run_job
 from rogerthat.dal import put_and_invalidate_cache
 from rogerthat.models.utils import allocate_id
 from rogerthat.settings import get_server_settings
-from rogerthat.utils import now
+from rogerthat.utils import now, send_mail
 from rogerthat.utils.transactions import run_in_xg_transaction
-from mcfw.rpc import arguments, returns
 from shop import SHOP_JINJA_ENVIRONMENT, SHOP_TEMPLATES_FOLDER
-from shop.bizz import send_email
 from shop.business.i18n import SHOP_DEFAULT_LANGUAGE
 from shop.dal import get_mobicage_legal_entity
 from shop.models import Invoice, Customer, OrderItem, Product, LegalEntity, Order, Charge, OrderNumber, ChargeNumber, \
     RegioManagerTeam, InvoiceNumber
 from solution_server_settings import get_solution_server_settings
+from xhtml2pdf import pisa
 
 
 try:
@@ -70,7 +69,6 @@ def create_reseller_invoice_for_legal_entity(legal_entity, start_date, end_date,
     solution_server_settings = get_solution_server_settings()
     from_email = solution_server_settings.shop_no_reply_email
     to_emails = solution_server_settings.shop_payment_admin_emails
-    reply_to = from_email
     mobicage_legal_entity = get_mobicage_legal_entity()
     logging.info('Exporting reseller invoices for legal entity %s(id %d) from %s(%s) to %s(%s)', legal_entity.name,
                  legal_entity.id, start_date, time.ctime(start_date), end_date, time.ctime(end_date))
@@ -86,7 +84,7 @@ def create_reseller_invoice_for_legal_entity(legal_entity, start_date, end_date,
         message = 'No new invoices for reseller %s for period %s - %s' % (legal_entity.name, start_time, end_time)
         logging.info(message)
         if do_send_email:
-            send_email(message, from_email, to_emails, [], reply_to, message)
+            send_mail(from_email, to_emails, message, message)
         return
     items_per_customer = {}
     customers_to_get = set()
@@ -109,7 +107,7 @@ def create_reseller_invoice_for_legal_entity(legal_entity, start_date, end_date,
             legal_entity.name, start_time, end_time)
         logging.info(message)
         if do_send_email:
-            send_email(message, from_email, to_emails, [], reply_to, message)
+            send_mail(from_email, to_emails, message, message)
         return
     customers = {c.id: c for c in db.get(customers_to_get)}
     product_totals = {}
@@ -235,4 +233,4 @@ def create_reseller_invoice_for_legal_entity(legal_entity, start_date, end_date,
         body_text = 'A new invoice is available for reseller %s for period %s to %s here: %s' % (
         legal_entity.name, start_time, end_time, serving_url)
 
-        send_email(subject, from_email, to_emails, [], reply_to, body_text)
+        send_mail(from_email, to_emails, subject, body_text)

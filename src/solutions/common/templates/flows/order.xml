@@ -3,16 +3,16 @@
     <definition
         name="order"
         language="{{ language }}"
-        startReference="base64:eyJtZmQiOiJhaE5rWlhaLWJXOWlhV05oWjJWamJHOTFaR2h5Y2pZTEVncHRZeTEwY21GamEyVnlJZ3B6TVVCbmMyMHVaM050REFzU0VVMWxjM05oWjJWR2JHOTNSR1Z6YVdkdUlnVnZjbVJsY2d3IiwibGFuZyI6ImVuIiwiaWQiOiJtZXNzYWdlX2RldGFpbHMifQ==">
+        startReference="message_details">
         <formMessage
-            id="base64:eyJtZmQiOiJhaE5rWlhaLWJXOWlhV05oWjJWamJHOTFaR2h5Y2pZTEVncHRZeTEwY21GamEyVnlJZ3B6TVVCbmMyMHVaM050REFzU0VVMWxjM05oWjJWR2JHOTNSR1Z6YVdkdUlnVnZjbVJsY2d3IiwibGFuZyI6ImVuIiwiaWQiOiJtZXNzYWdlX2RldGFpbHMifQ=="
+            id="message_details"
             alertIntervalType="NONE"
             alertType="SILENT"
             brandingKey="{{ branding_key }}"
-            positiveReference="base64:eyJtZmQiOiJhaE5rWlhaLWJXOWlhV05oWjJWamJHOTFaR2h5Y2pZTEVncHRZeTEwY21GamEyVnlJZ3B6TVVCbmMyMHVaM050REFzU0VVMWxjM05oWjJWR2JHOTNSR1Z6YVdkdUlnVnZjbVJsY2d3IiwibGFuZyI6ImVuIiwiaWQiOiJtZXNzYWdlX3BpY3R1cmUifQ=="
+            positiveReference="message_picture"
             vibrate="false"
             autoLock="true"
-            negativeReference="base64:eyJtZmQiOiJhaE5rWlhaLWJXOWlhV05oWjJWamJHOTFaR2h5Y2pZTEVncHRZeTEwY21GamEyVnlJZ3B6TVVCbmMyMHVaM050REFzU0VVMWxjM05oWjJWR2JHOTNSR1Z6YVdkdUlnVnZjbVJsY2d3IiwibGFuZyI6ImVuIiwiaWQiOiJlbmRfZW5kIn0=">
+            negativeReference="end_cancel">
             <content>{{ text_1|e }}</content>
             <form
                 positiveButtonConfirmation=""
@@ -33,7 +33,7 @@
             </form>
         </formMessage>
         <formMessage
-            id="base64:eyJtZmQiOiJhaE5rWlhaLWJXOWlhV05oWjJWamJHOTFaR2h5Y2pZTEVncHRZeTEwY21GamEyVnlJZ3B6TVVCbmMyMHVaM050REFzU0VVMWxjM05oWjJWR2JHOTNSR1Z6YVdkdUlnVnZjbVJsY2d3IiwibGFuZyI6ImVuIiwiaWQiOiJtZXNzYWdlX3BpY3R1cmUifQ=="
+            id="message_picture"
             alertIntervalType="NONE"
             alertType="SILENT"
             brandingKey="{{ branding_key }}"
@@ -57,9 +57,9 @@
         </formMessage>
         <flowCode
                 id="flow_code_phone_default"
-                exceptionReference="base64:eyJtZmQiOiJhaE5rWlhaLWJXOWlhV05oWjJWamJHOTFaR2h5Y2pZTEVncHRZeTEwY21GamEyVnlJZ3B6TVVCbmMyMHVaM050REFzU0VVMWxjM05oWjJWR2JHOTNSR1Z6YVdkdUlnVnZjbVJsY2d3IiwibGFuZyI6ImVuIiwiaWQiOiJtZXNzYWdlX3Bob25lIn0=">
+                exceptionReference="message_phone">
             <outlet
-                    reference="base64:eyJtZmQiOiJhaE5rWlhaLWJXOWlhV05oWjJWamJHOTFaR2h5Y2pZTEVncHRZeTEwY21GamEyVnlJZ3B6TVVCbmMyMHVaM050REFzU0VVMWxjM05oWjJWR2JHOTNSR1Z6YVdkdUlnVnZjbVJsY2d3IiwibGFuZyI6ImVuIiwiaWQiOiJtZXNzYWdlX3Bob25lIn0="
+                    reference="message_phone"
                     name="message_phone"
                     value="message_phone"/>
             <javascriptCode>
@@ -69,14 +69,14 @@
             </javascriptCode>
         </flowCode>
         <formMessage
-            id="base64:eyJtZmQiOiJhaE5rWlhaLWJXOWlhV05oWjJWamJHOTFaR2h5Y2pZTEVncHRZeTEwY21GamEyVnlJZ3B6TVVCbmMyMHVaM050REFzU0VVMWxjM05oWjJWR2JHOTNSR1Z6YVdkdUlnVnZjbVJsY2d3IiwibGFuZyI6ImVuIiwiaWQiOiJtZXNzYWdlX3Bob25lIn0="
+            id="message_phone"
             alertIntervalType="NONE"
             alertType="SILENT"
             brandingKey="{{ branding_key }}"
             positiveReference="flow_code_save"
             vibrate="false"
             autoLock="true"
-            negativeReference="base64:eyJtZmQiOiJhaE5rWlhaLWJXOWlhV05oWjJWamJHOTFaR2h5Y2pZTEVncHRZeTEwY21GamEyVnlJZ3B6TVVCbmMyMHVaM050REFzU0VVMWxjM05oWjJWR2JHOTNSR1Z6YVdkdUlnVnZjbVJsY2d3IiwibGFuZyI6ImVuIiwiaWQiOiJlbmRfZW5kIn0=">
+            negativeReference="end_cancel">
             <content>{% translate language, 'common', 'order-flow-phone' %}</content>
             <form
                 positiveButtonConfirmation=""
@@ -99,9 +99,9 @@
         </formMessage>
         <flowCode
                 id="flow_code_save"
-                exceptionReference="base64:eyJtZmQiOiJhaE5rWlhaLWJXOWlhV05oWjJWamJHOTFaR2h5Y2pZTEVncHRZeTEwY21GamEyVnlJZ3B6TVVCbmMyMHVaM050REFzU0VVMWxjM05oWjJWR2JHOTNSR1Z6YVdkdUlnVnZjbVJsY2d3IiwibGFuZyI6ImVuIiwiaWQiOiJmbHVzaF9mbHVzaCJ9">
+                exceptionReference="flush_result">
             <outlet
-                    reference="base64:eyJtZmQiOiJhaE5rWlhaLWJXOWlhV05oWjJWamJHOTFaR2h5Y2pZTEVncHRZeTEwY21GamEyVnlJZ3B6TVVCbmMyMHVaM050REFzU0VVMWxjM05oWjJWR2JHOTNSR1Z6YVdkdUlnVnZjbVJsY2d3IiwibGFuZyI6ImVuIiwiaWQiOiJmbHVzaF9mbHVzaCJ9"
+                    reference="flush_result"
                     name="message_rf"
                     value="message_rf"/>
             <javascriptCode>
@@ -122,21 +122,30 @@
             </javascriptCode>
         </flowCode>
         <resultsFlush
-            id="base64:eyJtZmQiOiJhaE5rWlhaLWJXOWlhV05oWjJWamJHOTFaR2h5Y2pZTEVncHRZeTEwY21GamEyVnlJZ3B6TVVCbmMyMHVaM050REFzU0VVMWxjM05oWjJWR2JHOTNSR1Z6YVdkdUlnVnZjbVJsY2d3IiwibGFuZyI6ImVuIiwiaWQiOiJmbHVzaF9mbHVzaCJ9"
-            reference="base64:eyJtZmQiOiJhaE5rWlhaLWJXOWlhV05oWjJWamJHOTFaR2h5Y2pZTEVncHRZeTEwY21GamEyVnlJZ3B6TVVCbmMyMHVaM050REFzU0VVMWxjM05oWjJWR2JHOTNSR1Z6YVdkdUlnVnZjbVJsY2d3IiwibGFuZyI6ImVuIiwiaWQiOiJtZXNzYWdlX3RobngifQ==" />
+            id="flush_result"
+            reference="message_order_sent" />
         <message
-            id="base64:eyJtZmQiOiJhaE5rWlhaLWJXOWlhV05oWjJWamJHOTFaR2h5Y2pZTEVncHRZeTEwY21GamEyVnlJZ3B6TVVCbmMyMHVaM050REFzU0VVMWxjM05oWjJWR2JHOTNSR1Z6YVdkdUlnVnZjbVJsY2d3IiwibGFuZyI6ImVuIiwiaWQiOiJtZXNzYWdlX3RobngifQ=="
+            id="message_order_sent"
             alertIntervalType="NONE"
             alertType="SILENT"
             brandingKey="{{ branding_key }}"
             allowDismiss="true"
             vibrate="false"
-            dismissReference="base64:eyJtZmQiOiJhaE5rWlhaLWJXOWlhV05oWjJWamJHOTFaR2h5Y2pZTEVncHRZeTEwY21GamEyVnlJZ3B6TVVCbmMyMHVaM050REFzU0VVMWxjM05oWjJWR2JHOTNSR1Z6YVdkdUlnVnZjbVJsY2d3IiwibGFuZyI6ImVuIiwiaWQiOiJlbmRfZW5kIn0="
+            dismissReference="end_processing"
             autoLock="true">
-            <content>{% translate language, 'common', 'order-flow-tnx' %}</content>
+            <content>
+                {%- if manual_confirmation -%}
+                    {% translate language, 'common', 'order-flow-manual-confirm', 'name=' + name %}
+                {%- else -%}
+                    {% translate language, 'common', 'order-flow-tnx' %}
+                {%- endif -%}
+            </content>
         </message>
         <end
-            id="base64:eyJtZmQiOiJhaE5rWlhaLWJXOWlhV05oWjJWamJHOTFaR2h5Y2pZTEVncHRZeTEwY21GamEyVnlJZ3B6TVVCbmMyMHVaM050REFzU0VVMWxjM05oWjJWR2JHOTNSR1Z6YVdkdUlnVnZjbVJsY2d3IiwibGFuZyI6ImVuIiwiaWQiOiJlbmRfZW5kIn0="
-            waitForFollowUpMessage="false" />
+            id="end_processing"
+            waitForFollowUpMessage="{% if manual_confirmation %}false{% else %}true{% endif %}"/>
+        <end
+            id="end_cancel"
+            waitForFollowUpMessage="false"/>
     </definition>
 </messageFlowDefinitionSet>

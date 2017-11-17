@@ -15,12 +15,14 @@
 #
 # @@license_version:1.2@@
 
+import base64
 import datetime
 import logging
 import string
 import uuid
 
 from babel.dates import format_datetime
+
 from google.appengine.api import search
 from google.appengine.ext import db
 from mcfw.properties import azzert
@@ -33,10 +35,10 @@ from rogerthat.dal.service import get_default_service_identity
 from rogerthat.rpc import users
 from rogerthat.rpc.service import BusinessException
 from rogerthat.translations import DEFAULT_LANGUAGE
-from rogerthat.utils import now
+from rogerthat.utils import now, send_mail
 from rogerthat.utils.location import GeoCodeZeroResultsException, coordinates_to_address, geo_code, \
     address_to_coordinates
-from shop.bizz import broadcast_prospect_creation, create_task, broadcast_task_updates, send_email
+from shop.bizz import broadcast_prospect_creation, create_task, broadcast_task_updates
 from shop.constants import PROSPECT_INDEX
 from shop.models import Prospect, ShopTask, ShopApp, RegioManagerTeam, Customer, Contact
 from solution_server_settings import get_solution_server_settings
@@ -271,9 +273,10 @@ def generate_prospect_export_excel(prospect_ids, do_send_email=True, recipients=
         from_email = solution_server_settings.shop_export_email
         to_emails = recipients
         body_text = 'See attachment for the exported prospects'
-        attachment = excel_string
-        attachment_type = 'vnd.ms-excel'
-        attachment_name = 'Prospects %s %s.xls' % (app.name, current_date)
-        send_email(subject, from_email, to_emails, [], solution_server_settings.shop_no_reply_email, body_text,
-                   attachment, attachment_type, attachment_name, False)
+        
+        attachments = []
+        attachments.append(('Prospects %s %s.xls' % (app.name, current_date),
+                            base64.b64encode(excel_string)))
+        
+        send_mail(from_email, to_emails, subject, body_text, attachments=attachments)
     return excel_string

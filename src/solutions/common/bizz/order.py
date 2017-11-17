@@ -46,6 +46,7 @@ from solutions.common.bizz.loyalty import update_user_data_admins
 from solutions.common.consts import ORDER_TYPE_SIMPLE, ORDER_TYPE_ADVANCED
 from solutions.common.dal import get_solution_main_branding, get_solution_settings, \
     get_solution_settings_or_identity_settings
+from solutions.common.dal.order import get_solution_order_settings
 from solutions.common.models import SolutionInboxMessage
 from solutions.common.models.order import SolutionOrder, SolutionOrderWeekdayTimeframe
 from solutions.common.models.properties import SolutionUser
@@ -99,6 +100,7 @@ def _order_received(service_user, message_flow_run_id, member, steps, end_id, en
 
     def trans():
         sln_settings = get_solution_settings(service_user)
+        order_settings = get_solution_order_settings(sln_settings)
         lang = sln_settings.main_language
         comment = None
         phone = None
@@ -152,15 +154,14 @@ def _order_received(service_user, message_flow_run_id, member, steps, end_id, en
                 msg = '%s:\n%s\n%s: %s\n%s: %s' % (common_translate(lang, SOLUTION_COMMON, 'order_received'), details,
                                                    common_translate(lang, SOLUTION_COMMON, 'phone_number'), phone,
                                                    common_translate(lang, SOLUTION_COMMON, 'takeaway_time'), takeaway_time_str)
-
-            if flush_id == 'flush_advanced_order_processing':
-                # Waiting for follow-up message
-                deferred.defer(_send_order_confirmation, service_user, lang, message_flow_run_id, member, steps, end_id,
-                               end_message_flow_id, parent_message_key, tag, result_key, flush_id, flush_message_flow_id,
-                               service_identity, user_details, details, _transactional=db.is_in_transaction())
-
         else:
             raise BusinessException('Unsupported order type %s', order_type)
+
+        if not order_settings.manual_confirmation:
+            # Waiting for follow-up message
+            deferred.defer(_send_order_confirmation, service_user, lang, message_flow_run_id, member, steps, end_id,
+                            end_message_flow_id, parent_message_key, tag, result_key, flush_id, flush_message_flow_id,
+                            service_identity, user_details, details, _transactional=db.is_in_transaction())
 
         service_identity_user = create_service_identity_user_wo_default(service_user, service_identity)
         o = SolutionOrder(parent=parent_key_unsafe(service_identity_user, SOLUTION_COMMON))

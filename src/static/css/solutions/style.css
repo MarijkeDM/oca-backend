@@ -867,3 +867,14 @@ md-divider {
 a.disabled {
     pointer-events: none;
 }
+
+.cropped_image_preview {
+    background-color: #f7f7f760;
+    width: 100%;
+    overflow: hidden;
+    border: 1px solid;
+}
+
+.cropped_image_preview > img {
+    max-width: 100%;
+}

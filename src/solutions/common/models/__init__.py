@@ -79,7 +79,7 @@ class SolutionInboxMessage(db.Model):
               CATEGORY_RESTAURANT_RESERVATION: u'reserve',
               CATEGORY_SANDWICH_BAR: u'order-sandwich',
               CATEGORY_AGENDA: u'agenda',
-              CATEGORY_CUSTOMER_SIGNUP: u'Customer'}
+              CATEGORY_CUSTOMER_SIGNUP: u'registration'}
 
     category = db.StringProperty(indexed=False)  # only filled in on parent message
     category_key = db.StringProperty(indexed=False)  # only filled in on parent message
@@ -129,7 +129,8 @@ class SolutionInboxMessage(db.Model):
         if self.category and self.category in SolutionInboxMessage.TOPICS:
             return SolutionInboxMessage.TOPICS[self.category]
         elif self.category:
-            logging.error("SolutionInboxMessage chat_topic_key not found for category '%s' key '%s'", self.category, self.key())
+            logging.error(
+                "SolutionInboxMessage chat_topic_key not found for category '%s' key '%s'", self.category, self.key())
         return None
 
     @property
@@ -370,6 +371,7 @@ class SolutionSettings(SolutionIdentitySettings):
     def tz_info(self):
         return get_timezone(self.timezone)
 
+
 class SolutionAutoBroadcastTypes(db.Model):
     broadcast_types = db.StringListProperty(indexed=False)
 
@@ -467,7 +469,6 @@ class SolutionLogo(BaseSolutionImage):
 
 class SolutionAvatar(BaseSolutionImage):
     published = db.BooleanProperty(indexed=False)
-
 
 
 class RestaurantMenu(db.Model):

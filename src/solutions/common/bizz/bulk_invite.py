@@ -51,14 +51,17 @@ def bulk_invite(service_user, service_identity, emails, message, app_id=None):
             counter += 1
             if counter < 4:
                 email = emailz.pop()
-                deferred.defer(_create_restaurant_invite, service_user, service_identity, email, message, app_id, _transactional=True)
+                deferred.defer(_create_restaurant_invite, service_user, service_identity,
+                               email, message, app_id, _transactional=True)
             else:
-                deferred.defer(bulk_invite, service_user, service_identity, emailz, message, app_id, _transactional=True)
+                deferred.defer(bulk_invite, service_user, service_identity,
+                               emailz, message, app_id, _transactional=True)
                 break
 
     if not app_id:
         app_id = system.get_info().app_ids[0]
     db.run_in_transaction(trans, app_id)
+
 
 @returns(NoneType)
 @arguments(service_user=users.User, service_identity=unicode, invitee=unicode, message=unicode, app_id=unicode)
@@ -88,6 +91,7 @@ def _create_restaurant_invite(service_user, service_identity, invitee, message, 
     xg_on = db.create_transaction_options(xg=True)
     db.run_in_transaction_options(xg_on, trans)
 
+
 @returns(NoneType)
 @arguments(service_user=users.User, service_identity=unicode, invitee=unicode, message=unicode, tag=unicode, sln_settings=SolutionSettings, app_id=unicode)
 def _restaurant_invite(service_user, service_identity, invitee, message, tag, sln_settings, app_id):
@@ -104,11 +108,25 @@ def _restaurant_invite(service_user, service_identity, invitee, message, tag, sl
     finally:
         users.clear_user()
 
+
 @returns(NoneType)
 @arguments(service_user=users.User, service_identity=unicode, tag=unicode, email=unicode, result=unicode, user_details=[UserDetailsTO])
 def bulk_invite_result(service_user, service_identity, tag, email, result, user_details):
+    if not tag:
+        logging.exception("Expected tag in bulk_invite_result")
+        return
+
+    if tag in (SERVICE_AUTOCONNECT_INVITE_TAG, APP_BROADCAST_TAG):
+        return
+
+    try:
+        key = db.Key(tag)
+    except db.BadKeyError:
+        logging.info('Tag is no db.Key: %s. Ignoring...', tag)
+        return
+
     def trans():
-        invite = db.get(reconstruct_key(db.Key(tag)))
+        invite = db.get(reconstruct_key(key))
         if not invite:
             logging.error("Invite object not found in datastore")
             return
@@ -121,26 +139,23 @@ def bulk_invite_result(service_user, service_identity, tag, email, result, user_
         invite.put()
         return save_message
 
-    if tag:
-        if tag not in (SERVICE_AUTOCONNECT_INVITE_TAG, APP_BROADCAST_TAG):
-            save_message = run_in_xg_transaction(trans)
-            if save_message:
-                now_ = now()
-                sln_settings = get_solution_settings(service_user)
-                msg = common_translate(sln_settings.main_language, SOLUTION_COMMON, 'if-accepted-invitation',
-                                       if_name=user_details[0].name,
-                                       if_email=user_details[0].email)
+    save_message = run_in_xg_transaction(trans)
+    if save_message:
+        now_ = now()
+        sln_settings = get_solution_settings(service_user)
+        msg = common_translate(sln_settings.main_language, SOLUTION_COMMON, 'if-accepted-invitation',
+                               if_name=user_details[0].name,
+                               if_email=user_details[0].email)
 
-                message = create_solution_inbox_message(service_user, service_identity, SolutionInboxMessage.CATEGORY_BULK_INVITE, None, False, user_details, now_, msg, False)
-                app_user = create_app_user_by_email(user_details[0].email, user_details[0].app_id)
-                send_inbox_forwarders_message(service_user, service_identity, app_user, msg, {
-                        'if_name': user_details[0].name,
-                        'if_email':user_details[0].email
-                    }, message_key=message.solution_inbox_message_key, reply_enabled=message.reply_enabled, send_reminder=False)
+        message = create_solution_inbox_message(
+            service_user, service_identity, SolutionInboxMessage.CATEGORY_BULK_INVITE, None, False, user_details, now_, msg, False)
+        app_user = create_app_user_by_email(user_details[0].email, user_details[0].app_id)
+        send_inbox_forwarders_message(service_user, service_identity, app_user, msg, {
+            'if_name': user_details[0].name,
+            'if_email': user_details[0].email
+        }, message_key=message.solution_inbox_message_key, reply_enabled=message.reply_enabled, send_reminder=False)
 
-                sln_i_settings = get_solution_settings_or_identity_settings(sln_settings, service_identity)
-                send_message(service_user, u"solutions.common.messaging.update",
-                             service_identity=service_identity,
-                             message=serialize_complex_value(SolutionInboxMessageTO.fromModel(message, sln_settings, sln_i_settings, True), SolutionInboxMessageTO, False))
-    else:
-        logging.exception("Expected tag in bulk_invite_result")
+        sln_i_settings = get_solution_settings_or_identity_settings(sln_settings, service_identity)
+        send_message(service_user, u"solutions.common.messaging.update",
+                     service_identity=service_identity,
+                     message=serialize_complex_value(SolutionInboxMessageTO.fromModel(message, sln_settings, sln_i_settings, True), SolutionInboxMessageTO, False))

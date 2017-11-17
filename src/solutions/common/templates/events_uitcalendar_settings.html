@@ -1,0 +1,20 @@
+{% raw %}
+{{each(i, region) regions}}
+<tr>
+    <td>
+        <div class="span9">
+            <h4>${region}</h4>
+        </div>
+    </td>
+    <td>
+        <div class="span2">
+            <div class="btn-group item-controls">
+                <button region="${region}" action="deleteRegion" class="btn">
+                    <i class="icon-trash"></i>
+                </button>
+            </div>
+        </div>
+    </td>
+</tr>
+{{/each}}
+{%- endraw %}

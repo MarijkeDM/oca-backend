@@ -15,6 +15,8 @@
 #
 # @@license_version:1.2@@
 
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
 import json
 import logging
 
@@ -30,13 +32,14 @@ from rogerthat.rpc.service import BusinessException
 from rogerthat.service.api import qr, messaging, system
 from rogerthat.to.friends import GetUserInfoResponseTO
 from rogerthat.to.service import SendApiCallCallbackResultTO, UserDetailsTO
-from rogerthat.utils import now, channel
+from rogerthat.utils import now, channel, get_epoch_from_datetime
 from rogerthat.utils.app import get_app_user_tuple
 from rogerthat.utils.transactions import run_in_xg_transaction
 from solutions import translate as common_translate
 from solutions.common import SOLUTION_COMMON
 from solutions.common.dal import get_solution_settings
 from solutions.common.dal.cityapp import get_service_users_for_city
+from solutions.common.dal.city_vouchers import get_city_vouchers_settings
 from solutions.common.models.city_vouchers import SolutionCityVoucher, SolutionCityVoucherQRCodeExport, \
     SolutionCityVoucherTransaction, SolutionCityVoucherRedeemTransaction, SolutionCityVoucherSettings
 from solutions.common.models.loyalty import CustomLoyaltyCard
@@ -185,8 +188,7 @@ def put_city_voucher_user(app_id, username, pincode):
         raise BusinessException("Pincode should be exactly 4 characters")
 
     def trans():
-        sln_city_voucher_settings_key = SolutionCityVoucherSettings.create_key(app_id)
-        sln_city_voucher_settings = SolutionCityVoucherSettings.get(sln_city_voucher_settings_key)
+        sln_city_voucher_settings = get_city_vouchers_settings(app_id)
         if not sln_city_voucher_settings:
             raise BusinessException("Unable to put city voucher user, settings not found")
 
@@ -206,8 +208,7 @@ def put_city_voucher_user(app_id, username, pincode):
 @arguments(app_id=unicode, username=unicode)
 def delete_city_voucher_user(app_id, username):
     def trans():
-        sln_city_voucher_settings_key = SolutionCityVoucherSettings.create_key(app_id)
-        sln_city_voucher_settings = SolutionCityVoucherSettings.get(sln_city_voucher_settings_key)
+        sln_city_voucher_settings = get_city_vouchers_settings(app_id)
         if not sln_city_voucher_settings:
             raise BusinessException("Unable to delete city voucher user, settings not found")
         if username not in sln_city_voucher_settings.usernames:
@@ -281,19 +282,22 @@ def _resolve_voucher(service_user, service_identity, url):
         logging.debug("Could not find city voucher for data: %s", data)
         raise Exception("Could not find city voucher")
 
+    sln_settings = get_solution_settings(service_user)
+
     r_dict = dict()
     r_dict["type"] = SolutionCityVoucher.TYPE
     r_dict["app_id"] = sln_city_voucher.app_id
     r_dict["voucher_id"] = sln_city_voucher.key().id()
     r_dict["uid"] = sln_city_voucher.uid
     if sln_city_voucher.activated:
+        if sln_city_voucher.expired:
+            raise BusinessException(common_translate(sln_settings.main_language, SOLUTION_COMMON, 'Voucher has expired'))
         r_dict["status"] = 1
         r_dict["value"] = sln_city_voucher.value
         r_dict["redeemed_value"] = sln_city_voucher.redeemed_value
     elif service_user == city_service_user:
         r_dict["status"] = 2
     else:
-        sln_settings = get_solution_settings(service_user)
         raise BusinessException(common_translate(sln_settings.main_language, SOLUTION_COMMON, 'Voucher not activated'))
 
     return r_dict
@@ -350,8 +354,7 @@ def solution_voucher_pin_activate(service_user, email, method, params, tag, serv
         if sln_city_voucher.activated:
             raise Exception(u"sln_city_voucher was already activated")
 
-        sln_city_voucher_settings_key = SolutionCityVoucherSettings.create_key(jsondata["app_id"])
-        sln_city_voucher_settings = SolutionCityVoucherSettings.get(sln_city_voucher_settings_key)
+        sln_city_voucher_settings = get_city_vouchers_settings(jsondata["app_id"])
         if not sln_city_voucher_settings:
             raise Exception(u"sln_city_voucher_settings was None")
 
@@ -368,6 +371,15 @@ def solution_voucher_pin_activate(service_user, email, method, params, tag, serv
         logging.error("solutions.voucher.activate.pin exception occurred", exc_info=True)
         r.error = common_translate(sln_settings.main_language, SOLUTION_COMMON, 'error-occured-unknown')
     return r
+
+
+@returns((int, long))
+@arguments(app_id=unicode)
+def get_expiration_date_from_today(app_id):
+    settings = get_city_vouchers_settings(app_id)
+    if settings.validity:
+        expiration_date = datetime.utcnow().date() + relativedelta(months=settings.validity)
+        return get_epoch_from_datetime(expiration_date)
 
 
 @returns(SendApiCallCallbackResultTO)
@@ -415,13 +427,18 @@ def solution_voucher_activate(service_user, email, method, params, tag, service_
             history.put()
 
             sln_city_voucher.activated = True
+            sln_city_voucher.activation_date = now()
             sln_city_voucher.value = jsondata["value"]
             sln_city_voucher.internal_account = jsondata["internal_account"]
             sln_city_voucher.cost_center = jsondata["cost_center"]
             sln_city_voucher.username = jsondata["username"]
             sln_city_voucher.redeemed_value = 0
+            sln_city_voucher.expiration_date = get_expiration_date_from_today(jsondata['app_id'])
+            app_user_details = jsondata.get('app_user_details')
+            if app_user_details:
+                sln_city_voucher.owner = users.User(email=app_user_details['email'])
+                sln_city_voucher.owner_name = app_user_details['name']
             sln_city_voucher.put()
-
             deferred.defer(re_index_voucher, sln_city_voucher.key(), _transactional=True)
 
         xg_on = db.create_transaction_options(xg=True)

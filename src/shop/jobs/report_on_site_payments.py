@@ -49,7 +49,8 @@ def report_on_site_payments():
     
     server_settings = get_server_settings()
     solution_server_settings = get_solution_server_settings()
+    subject = u'On site payments for the last month'
     send_mail(server_settings.dashboardEmail,
               solution_server_settings.shop_payment_admin_emails,
-              u'On site payments for the last month',
+              subject,
               body)

@@ -22,7 +22,8 @@ from shop.cron import RecurrentBilling, ReportOnSitePaymentsHandler, NotifyExten
     ExportResellerInvoicesHandler, CleanupUnverifiedSignupRequests
 from solution_server_settings.handlers import SolutionServerSettingsHandler
 from solutions.common.cron.associations import CreateNonProfitStatistics
-from solutions.common.cron.city_vouchers import SolutionCityVouchersExportHandler
+from solutions.common.cron.city_vouchers import SolutionCityVouchersExportHandler, \
+    SolutionCityVoucherExpiredReminderHandler
 from solutions.common.cron.events import SolutionEventsScraper
 from solutions.common.cron.events.events import CleanupSolutionEvents, ReminderSolutionEvents, \
     SolutionSyncGoogleCalendarEvents, UpdateSolutionEventStartDate, CityAppSolutionGatherEvents, \
@@ -52,6 +53,7 @@ handlers = [
     ('/admin/cron/rpc/solution_module_sandwich_auto_broadcast', SandwichAutoBroadcastCronHandler),
     ('/admin/cron/rpc/solution_loyalty_lottery_loot', LootLotteryCronHandler),
     ('/admin/cron/rpc/solution_loyalty_export', SolutionLoyaltyExportHandler),
+    ('/admin/cron/rpc/solution_expired_vouchers_reminder', SolutionCityVoucherExpiredReminderHandler),
     ('/admin/cron/rpc/city_association_statistics', CreateNonProfitStatistics),
     ('/admin/cron/rpc/solution_events_scraper', SolutionEventsScraper),
     ('/admin/cron/rpc/solution_news_scraper', SolutionNewsScraper),

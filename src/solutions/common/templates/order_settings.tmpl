@@ -12,7 +12,7 @@
             width: auto;
         }
     </style>
-    
+
     {% if customer.payment_possible %}
     <div id="mobile_payments_container" class="clearfix">
         <h3>{% translate language, 'common', 'mobile_payments' %}</h3>
@@ -31,6 +31,20 @@
     </div>
     <hr>
     {% endif %}
+
+    <h3>{% translate language, 'common', 'confirming_incoming_orders' %}</h3>
+    <div id="confirmation_container">
+        <label for="automatic_confirmation" class="radio">
+            <input type="radio" name="auto_or_manual_confirmation" id="automatic_confirmation"
+                   value="automatic"></input>
+            {% translate language, 'common', 'automatic' %}
+        </label>
+        <label for="manual_confirmation" class="radio">
+            <input type="radio" name="auto_or_manual_confirmation" id="manual_confirmation"
+                value="manual"> </input>
+            {% translate language, 'common', 'manual' %}
+        </label>
+    </div>
 
     <h3>{% translate language, 'common', 'order_type' %}</h3>
 
@@ -132,7 +146,13 @@
             </button>
         </div>
     </div>
-    
+
+    <h3>{% translate language, 'common', 'order_is_ready_default_message' %}</h3>
+    <div id="order_ready_message_container">
+        <textarea id="order_ready_default_message" class="span6" rows="3"
+                  placeholder="{% translate language, 'common', 'enter-dot-dot-dot' %}"></textarea>
+    </div>
+
     <div id="payconiqSettingsModal" class="modal hide fade" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-header clearfix">
             <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>

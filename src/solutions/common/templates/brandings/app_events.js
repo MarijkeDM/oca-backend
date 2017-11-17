@@ -743,6 +743,10 @@
     function loadEvents() {
         if (rogerthat.service.data.solutionCalendars === undefined)
             return;
+        
+        if (rogerthat.user.data.calendar.disabled === undefined) {
+        	rogerthat.user.data.calendar.disabled = [];
+        }
 
         if (rogerthat.service.data.solutionCalendars.length > 1) {
             $("#events-footer").show();

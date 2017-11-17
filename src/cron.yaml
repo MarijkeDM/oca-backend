@@ -71,6 +71,10 @@ cron:
   url: /admin/cron/rpc/solution_city_vouchers
   schedule: 1 of month 8:00
 
+- description: Expired vouchers reminder
+  url: /admin/cron/rpc/solution_expired_vouchers_reminder
+  schedule: every day 02:00
+
 - description: Loyalty export
   url: /admin/cron/rpc/solution_loyalty_export
   schedule: 1 of month 12:00

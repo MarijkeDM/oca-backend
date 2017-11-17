@@ -56,8 +56,7 @@
     }
 
     function renderMap(services) {
-        var infoWindow,
-            markers = {};
+        var infoWindow;
         var lat_center = getParameterByName('lat');
         var lon_center = getParameterByName('lon');
         var coordinatesBelgium = new google.maps.LatLng(50.623211, 4.438007);
@@ -72,19 +71,15 @@
         });
         $.each(services, function (i, service) {
             service.hash = service.lat + "" + service.lon;
-            var marker = markers[service.hash];
-            if (!marker) {
-                var icon = getMarkerIcon(service);
-                marker = new google.maps.Marker({
-                    position: new google.maps.LatLng(service.lat, service.lon),
-                    map: map,
-                    icon: icon,
-                    cursor: 'pointer',
-                    service: service
-                });
-                oms.addMarker(marker);
-                markers[service.hash] = marker;
-            }
+            var icon = getMarkerIcon(service);
+            var marker = new google.maps.Marker({
+                position: new google.maps.LatLng(service.lat, service.lon),
+                map: map,
+                icon: icon,
+                cursor: 'pointer',
+                service: service
+            });
+            oms.addMarker(marker);
         });
         oms.addListener('click', function (marker) {
             var markerContent = $('#marker_content').html();

@@ -66,12 +66,12 @@ def rest_save_app_settings(settings):
 
 @rest ("/common/cityapp/settings/save", "post")
 @returns(ReturnStatusTO)
-@arguments(gather_events=bool, uitdatabank_secret=unicode, uitdatabank_key=unicode, uitdatabank_region=unicode)
-def save_cityapp_settings(gather_events, uitdatabank_secret=None, uitdatabank_key=None, uitdatabank_region=None):
+@arguments(gather_events=bool, uitdatabank_secret=unicode, uitdatabank_key=unicode, uitdatabank_regions=[unicode])
+def save_cityapp_settings(gather_events, uitdatabank_secret=None, uitdatabank_key=None, uitdatabank_regions=None):
     from solutions.common.bizz.cityapp import save_cityapp_settings as save_cityapp_settings_bizz
     try:
         service_user = users.get_current_user()
-        save_cityapp_settings_bizz(service_user, gather_events, uitdatabank_secret, uitdatabank_key, uitdatabank_region)
+        save_cityapp_settings_bizz(service_user, gather_events, uitdatabank_secret, uitdatabank_key, uitdatabank_regions)
         return RETURNSTATUS_TO_SUCCESS
     except BusinessException as e:
         return ReturnStatusTO.create(False, e.message)
@@ -93,7 +93,7 @@ def uitdatabank_check_cityapp_settings():
             except ValueError:
                 pass
     except Exception:
-        logging.debug('Failed to check uitdatabank.be settings: %s', dict(key=cap.uitdatabank_key, region=cap.uitdatabank_region), exc_info=1)
+        logging.debug('Failed to check uitdatabank.be settings: %s', dict(key=cap.uitdatabank_key, regions=cap.uitdatabank_regions), exc_info=1)
         success, result = False, translate(sln_settings.main_language, SOLUTION_COMMON, 'error-occured-unknown-try-again')
 
     def trans():

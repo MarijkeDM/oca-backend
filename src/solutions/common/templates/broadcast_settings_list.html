@@ -1,19 +1,33 @@
-<p>{% translate language, 'common', 'change_broadcast_type_order_here' %}</p>
 {% raw %}
+{{if broadcastTypes.length}}
+<p>${t.change_broadcast_type_order_here}</p>
 <ul class="broadcast-types-sortable-list unstyled" id="broadcast-types-sortable-list">
     {{each(i, type) broadcastTypes}}
-    <li>
-        <button type="button" class="btn-mini {{if i !== 0 }}btn-primary{{/if}}"  data-value="${type}"
+    <li class="row">
+        <div class="span4">
+            <button type="button" class="btn-mini {{if i !== 0 }}btn-primary{{/if}}"  data-value="${type}"
                 {{if i===0 }}disabled{{else}}data-action="up"{{/if}}>
-        <i class="fa fa-arrow-up"></i></button>
-        <button type="button" class="btn-mini {{if i !== broadcastTypes.length -1}}btn-primary{{/if}}"
-                data-value="${type}" {{if i=== broadcastTypes.length -1 }}disabled{{else}}data-action="down"{{/if}}>
-        <i class="fa fa-arrow-down"></i></button>
-        ${type}
+            <i class="fa fa-arrow-up"></i></button>
+            <button type="button" class="btn-mini {{if i !== broadcastTypes.length -1}}btn-primary{{/if}}"
+                    data-value="${type}" {{if i=== broadcastTypes.length -1 }}disabled{{else}}data-action="down"{{/if}}>
+            <i class="fa fa-arrow-down"></i></button>
+            ${type}
+        </div>
+        <div class="span8">
+            <button type="button" class="btn-mini btn-danger" data-value="${type}" data-action="delete">
+                    <i class="fa fa-trash"></i>
+            </button>
+        </div>
     </li>
     {{/each}}
 </ul>
 <button type="button" class="btn btn-success" id="btn-save-broadcast-settings">
     <span id="save-broadcast-settings-status">${t.SAVE}</span>
 </button>
+{{else}}
+<p class="text-error">
+    ${t.add_1_broadcast_type_at_least}
+</p>
+{{/if}}
+
 {% endraw %}

@@ -19,15 +19,16 @@ import logging
 from types import NoneType
 
 from mcfw.consts import MISSING
-from mcfw.restapi import rest, GenericRESTRequestHandler
+from mcfw.restapi import rest
 from mcfw.rpc import returns, arguments
 from rogerthat.rpc import users
 from rogerthat.rpc.service import ServiceApiException
 from rogerthat.to import ReturnStatusTO
 from rogerthat.to.news import NewsActionButtonTO, NewsTargetAudienceTO
 from rogerthat.utils.service import create_service_identity_user
-from shop.to import OrderItemTO
 from shop.exceptions import BusinessException
+from shop.to import OrderItemTO
+from shop.view import get_current_http_host
 from solutions import SOLUTION_COMMON, translate as common_translate
 from solutions.common.bizz.news import get_news, put_news_item, delete_news, get_sponsored_news_count, \
     get_news_statistics
@@ -93,7 +94,7 @@ def rest_put_news_item(title, message, broadcast_type, image, sponsored=False, a
         service_identity_user = create_service_identity_user(service_user, service_identity)
 
     try:
-        host = GenericRESTRequestHandler.getCurrentRequest().host
+        host = get_current_http_host()
         return put_news_item(service_identity_user, title, message, broadcast_type, sponsored, image, action_button,
                              order_items, type, qr_code_caption, app_ids, scheduled_at, news_id, broadcast_on_facebook,
                              broadcast_on_twitter, facebook_access_token, target_audience=target_audience,

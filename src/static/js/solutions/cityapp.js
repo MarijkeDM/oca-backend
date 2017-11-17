@@ -26,7 +26,6 @@ $(function() {
 
     var TMPL_SET_EVENTS_SECRET= '<label>' + CommonTranslations.SECRET + ' (uitdatabank.be v2):</label><input type="text" placeholder="' + CommonTranslations.ENTER_DOT_DOT_DOT + '" class="span4">';
     var TMPL_SET_EVENTS_KEY = '<label>' + CommonTranslations.KEY + ' (uitdatabank.be):</label><input type="text" placeholder="' + CommonTranslations.ENTER_DOT_DOT_DOT + '" class="span4">';
-    var TMPL_SET_EVENTS_REGION = '<label>' + CommonTranslations.REGION + ':</label><input type="text" placeholder="' + CommonTranslations.ENTER_DOT_DOT_DOT + '" class="span4">';
 
     var TMPL_SET_GATHER_EVENTS = '<div class="btn-group">'
         + '      <button class="btn btn-success" id="gatherEventsEnabled">' + CommonTranslations.GATHER_EVENTS_DISABLED + '</button>'
@@ -67,17 +66,17 @@ $(function() {
         } else {
             $('.sln-set-events-key input').removeClass("error");
         }
-        if ($('.sln-set-events-region input').val() === "") {
-            $('.sln-set-events-region input').addClass("error");
+        if ($('.sln-set-events-regions').data('regions') === null) {
+            $('.sln-set-events-regions').addClass("error");
             allOK = false;
         } else {
-            $('.sln-set-events-region input').removeClass("error");
+            $('.sln-set-events-regions').removeClass("error");
         }
         // do post
         var data = JSON.stringify({
             uitdatabank_secret : $('.sln-set-events-secret input').val(),
             uitdatabank_key : $('.sln-set-events-key input').val(),
-            uitdatabank_region : $('.sln-set-events-region input').val(),
+            uitdatabank_regions : $('.sln-set-events-regions').data('regions'),
             gather_events : gatherEvents,
         });
         sln.call({
@@ -116,12 +115,13 @@ $(function() {
                 // check uitdatabank settings
                 var secretElem = $('.sln-set-events-secret input');
                 var keyElem = $('.sln-set-events-key input');
-                var regionElem = $('.sln-set-events-region input');
+                var regionElem = $('.sln-set-events-regions');
                 if(secretElem.length && keyElem.length && regionElem.length) {
                     secretElem.data('updateVal')(data.uitdatabank_secret);
                     keyElem.data('updateVal')(data.uitdatabank_key);
-                    regionElem.data('updateVal')(data.uitdatabank_region);
+                    regionElem.data('regions', data.uitdatabank_regions);
                     setUitdatabankStatus(data.uitdatabank_enabled);
+                    renderRegions(data.uitdatabank_regions);
                 }
                 setGatherEvents(data.gather_events);
             },
@@ -138,22 +138,55 @@ $(function() {
         }
         $('#uitdatabankStatusText').text(text);
     };
+    
+    var deleteRegion = function() {
+    	var region = $(this).attr('region');
+    	var regionElem = $('.sln-set-events-regions');
+    	var index = regionElem.data('regions').indexOf(region);
+    	if (index >= 0) {
+	    	regionElem.data('regions').splice(index, 1);
+	    	renderRegions(regionElem.data('regions'));
+            saveCityAppSettings();
+	    }
+    };
+    
+    var renderRegions = function(regions) {
+    	var htmlElement = $('.sln-set-events-regions table tbody');
+    	htmlElement.empty();
+    	var html = $.tmpl(templates.events_uitcalendar_settings, {
+            regions : regions
+        });
+    	htmlElement.append(html);
+    	htmlElement.find('button[action="deleteRegion"]').click(deleteRegion);
+    };
 
     $(".sln-set-events-status").html(TMPL_SET_EVENTS_STATUS);
     $(".sln-set-events-secret").html(TMPL_SET_EVENTS_SECRET);
     $(".sln-set-events-key").html(TMPL_SET_EVENTS_KEY);
-    $(".sln-set-events-region").html(TMPL_SET_EVENTS_REGION);
+    $(".sln-set-events-uit-settings").show();
 
     $('#uitdatabankStatusEnabled').click(function() {
         setUitdatabankStatus(!uitdatabankStatusEnabled);
     });
-    $('#uitdatabankStatusDisabled').click( function() {
+    $('#uitdatabankStatusDisabled').click(function() {
         setUitdatabankStatus(!uitdatabankStatusEnabled);
+    });
+    
+    $('#sln-set-events-add-region').click(function() {
+    	sln.input(function (value) {
+            if (!value.trim())
+                return false;
+
+            var regionElem = $('.sln-set-events-regions');
+            regionElem.data('regions').push(value);
+            renderRegions(regionElem.data('regions'));
+            saveCityAppSettings();
+            
+        }, CommonTranslations.ADD, CommonTranslations.SAVE, CommonTranslations.ENTER_DOT_DOT_DOT);
     });
 
     sln.configureDelayedInput($('.sln-set-events-secret input'), saveCityAppSettings);
     sln.configureDelayedInput($('.sln-set-events-key input'), saveCityAppSettings);
-    sln.configureDelayedInput($('.sln-set-events-region input'), saveCityAppSettings);
 
     loadCityAppSettings();
 

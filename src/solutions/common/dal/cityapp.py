@@ -38,6 +38,7 @@ def get_cityapp_profile(service_user):
             cityapp_profile.uitdatabank_enabled = False
             cityapp_profile.uitdatabank_key = None
             cityapp_profile.uitdatabank_region = None
+            cityapp_profile.uitdatabank_regions = []
             cityapp_profile.gather_events_enabled = False
             cityapp_profile.put()
         return cityapp_profile

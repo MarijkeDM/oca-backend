@@ -54,7 +54,7 @@ from rogerthat.to.messaging.service_callback_results import PokeCallbackResultTO
     TYPE_FLOW, FlowCallbackResultTypeTO
 from rogerthat.to.service import SendApiCallCallbackResultTO, UserDetailsTO
 from rogerthat.translations import DEFAULT_LANGUAGE
-from rogerthat.utils import send_mail_via_mime, file_get_contents, now, get_epoch_from_datetime, \
+from rogerthat.utils import send_mail, file_get_contents, now, get_epoch_from_datetime, \
     replace_url_with_forwarded_server
 from rogerthat.utils.app import create_app_user_by_email
 from rogerthat.utils.channel import send_message
@@ -523,21 +523,12 @@ def solution_add_to_calender_event(service_user, email, method, params, tag, ser
     cal.add_component(event)
     icall = cal.to_ical()
 
-    from email.mime.multipart import MIMEMultipart
-    from email.mime.base import MIMEBase
-    from email.mime.text import MIMEText
-    msg = MIMEMultipart('alternative')
-    msg['Subject'] = emailSubject
-    msg['From'] = rogerthat_settings.senderEmail if app.type == App.APP_TYPE_ROGERTHAT else ("%s <%s>" % (app.name, app.dashboard_email_address))
-    msg['To'] = email
+    attachments = []
+    attachments.append(("event.ics",
+                        base64.b64encode(icall)))
 
-    body = MIMEText(emailBody.encode('utf-8'), 'plain', 'utf-8')
-    invite = MIMEBase('text', 'calendar', name="event.ics", charset="utf-8", method='REQUEST')
-    invite.set_payload(icall)
-    msg.attach(body)
-    msg.attach(invite)
-
-    send_mail_via_mime(rogerthat_settings.dashboardEmail, email, msg)
+    from_ = rogerthat_settings.senderEmail if app.type == App.APP_TYPE_ROGERTHAT else ("%s <%s>" % (app.name, app.dashboard_email_address))
+    send_mail(from_, email, emailSubject, emailBody, attachments=attachments)
 
     r = SendApiCallCallbackResultTO()
     r.result = u"successfully reminded"
@@ -885,6 +876,13 @@ def new_event_received(service_user, message_flow_run_id, member, steps, end_id,
     return None
 
 
+def get_branding_resource(filename):
+    path = os.path.join(os.path.dirname(solutions.__file__),
+                        'common', 'templates', 'brandings',
+                        filename)
+    return file_get_contents(path)
+
+
 def provision_events_branding(solution_settings, main_branding, language):
     """
     Args:
@@ -899,13 +897,10 @@ def provision_events_branding(solution_settings, main_branding, language):
             new_zip_stream = StringIO()
             zip_ = ZipFile(new_zip_stream, 'w', compression=ZIP_DEFLATED)
             try:
-                path = os.path.join(os.path.dirname(solutions.__file__), 'common', 'templates', 'brandings/app_jquery.tmpl.js')
-                zip_.writestr("jquery.tmpl.min.js", file_get_contents(path))
-                path = os.path.join(os.path.dirname(solutions.__file__), 'common', 'templates', 'brandings/moment-with-locales.min.js')
-                zip_.writestr("moment-with-locales.min.js", file_get_contents(path))
+                zip_.writestr("jquery.tmpl.min.js", get_branding_resource("app_jquery.tmpl.js"))
+                zip_.writestr("moment-with-locales.min.js", get_branding_resource("moment-with-locales.min.js"))
                 zip_.writestr("app-translations.js", JINJA_ENVIRONMENT.get_template("brandings/app_events_translations.js").render({'language': language}).encode("utf-8"))
-                path = os.path.join(os.path.dirname(solutions.__file__), 'common', 'templates', 'brandings/app_events.js')
-                zip_.writestr("app.js", file_get_contents(path))
+                zip_.writestr("app.js", '\n\n'.join(map(get_branding_resource, ["app_polyfills.js", "app_events.js"])))
 
                 for file_name in set(stream.namelist()):
                     str_ = stream.read(file_name)

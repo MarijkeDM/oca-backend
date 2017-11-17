@@ -1550,7 +1550,7 @@ $(function () {
             }
         }
 
-        function checkFacebookPermissions(permissionsList, showErrors) {
+        function checkFacebookPermissions(permissionsList) {
             var errors = [];
 
             if(permissionsList.indexOf('manage_pages') === -1 ||
@@ -1562,9 +1562,7 @@ $(function () {
             }
 
             if(errors.length > 0) {
-                if(showErrors) {
-                    sln.alert(errors.join('<br/>'));
-                }
+                sln.alert(errors.join('<br/>'));
                 return false;
             } else {
                 return true;
@@ -1574,7 +1572,7 @@ $(function () {
         function loginToFacebook() {
             FB.login(function (response) {
                 if(response && response.authResponse) {
-                    if(checkFacebookPermissions(response.authResponse.grantedScopes, true)) {
+                    if(checkFacebookPermissions(response.authResponse.grantedScopes)) {
                         loadFacebookPages(response.authResponse.accessToken);
                     } else {
                         elemCheckPostToFacebook.attr('checked', false);
@@ -1593,24 +1591,7 @@ $(function () {
         function checkForFacebookLogin() {
             if(elemCheckPostToFacebook.is(':checked')) {
                 sln.showProcessing(CommonTranslations.LOADING_DOT_DOT_DOT);
-                FB.getLoginStatus(function(response) {
-                    if(response && response.status === 'connected') {
-                        FB.api('/me/permissions', function(permResp) {
-                            var list = $.map(permResp.data, function(perm, i) {
-                                if(perm.status === 'granted') {
-                                    return perm.permission;
-                                }
-                            });
-                            if(!checkFacebookPermissions(list, false)) {
-                                loginToFacebook();
-                            } else {
-                                loadFacebookPages(response.authResponse.accessToken);
-                            }
-                        });
-                    } else {
-                        loginToFacebook();
-                    }
-                }, true);
+                loginToFacebook();
             } else {
                 elemFacebookPage.hide();
             }
@@ -1940,9 +1921,11 @@ $(function () {
                 return;
             }
             // check for facebook access token even if the post on facebook is checked
-            if(data.broadcast_on_facebook && !data.facebook_access_token) {
-                sln.alert(T('Login with facebook first'), null, CommonTranslations.ERROR);
-                return;
+            if(!elemCheckPostToFacebook.is(':disabled')) {
+                if(data.broadcast_on_facebook && !data.facebook_access_token) {
+                    sln.alert(T('Login with facebook first'), null, CommonTranslations.ERROR);
+                    return;
+                }
             }
             submitNews(data);
         }

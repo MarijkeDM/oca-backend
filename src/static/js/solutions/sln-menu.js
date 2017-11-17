@@ -54,6 +54,11 @@ $(function () {
             advancedOrder: orderSettings.order_type == CONSTS.ORDER_TYPE_ADVANCED && MODULES.indexOf('order') !== -1,
             showVisibleInCheckboxes: shouldShowVisibility()
         });
+
+        // the menu is loaded, enable adding a new category or editing the name
+        $("#menu").find("button[name=newcat]").attr('disabled', false);
+        $("#edit_menu_name").attr('disabled', false);
+
         menuHtmlElement.html(html);
         menuHtmlElement.find('button[action="additem"]').click(addItem);
         menuHtmlElement.find('button[action="deleteitem"]').click(deleteItem);

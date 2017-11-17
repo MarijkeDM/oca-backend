@@ -29,15 +29,17 @@ from solutions.common.models import SolutionNewsScraperSettings
 def check_for_news(service_user):
     deferred.defer(_check_for_news, service_user)
 
+
 def _check_for_news(service_user):
     sln_settings = get_solution_settings(service_user)
     if BROADCAST_TYPE_NEWS not in sln_settings.broadcast_types:
-        logging.error("check_for_news_in_be_sint_lievens_houtem failed no broadcast type found with name '%s'", BROADCAST_TYPE_NEWS)
+        logging.error(
+            "check_for_news_in_be_sint_lievens_houtem failed no broadcast type found with name '%s'", BROADCAST_TYPE_NEWS)
         return
 
     broadcast_type = transl(BROADCAST_TYPE_NEWS, sln_settings.main_language)
 
-    url = u"http://www.sint-lievens-houtem.be/rss.xml"
+    url = u"https://www.sint-lievens-houtem.be/rss.xml"
     response = urlfetch.fetch(url, deadline=60)
     if response.status_code != 200:
         logging.error("Could not check for news in be_sint_lievens_houtem.\n%s" % response.content)

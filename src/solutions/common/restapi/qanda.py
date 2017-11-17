@@ -56,9 +56,8 @@ def ask_question(title, description, modules):
                  modules=modules,
                  language=sln_settings.main_language,
                  team_id=default_team_id).put()
-
-        send_mail(get_server_settings().senderEmail, solution_server_settings.solution_qanda_info_receivers, title,
-                  """Please reply to %s (%s) with the following link:
+        
+        message = """Please reply to %s (%s) with the following link:
 %s/internal/shop/questions
 
 Title:
@@ -66,8 +65,9 @@ Title:
 
 Description:
 %s""" % (sln_settings.login.email() if sln_settings.login else "", users.get_current_user(),
-         get_server_settings().baseUrl, title, description),
-                  transactional=True)
+         get_server_settings().baseUrl, title, description)
+        send_mail(get_server_settings().senderEmail, solution_server_settings.solution_qanda_info_receivers, title,
+                  message, transactional=True)
 
     xg_on = db.create_transaction_options(xg=True)
     db.run_in_transaction_options(xg_on, trans)
@@ -88,14 +88,16 @@ def reply_on_question(question_id, description):
             qr.visible = False
             qr.put()
             sln_settings = get_solution_settings(users.get_current_user())
-            send_mail(get_server_settings().senderEmail, solution_server_settings.solution_qanda_info_receivers, q.title, """Please reply to %s (%s) with the following link:
+            message = """Please reply to %s (%s) with the following link:
 %s/internal/shop/questions
 
 Title:
 %s
 
 Description:
-%s""" % (sln_settings.login.email() if sln_settings.login else "", users.get_current_user(), get_server_settings().baseUrl, q.title, description), transactional=True)
+%s""" % (sln_settings.login.email() if sln_settings.login else "", users.get_current_user(), get_server_settings().baseUrl, q.title, description)
+            send_mail(get_server_settings().senderEmail, solution_server_settings.solution_qanda_info_receivers,
+                      q.title, message, transactional=True)
 
             return ReturnStatusTO.create(True, None)
         sln_settings = get_solution_settings(service_user)

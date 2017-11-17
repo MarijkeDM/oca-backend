@@ -123,6 +123,67 @@ def _process_cityapp_uitdatabank_events(cap_key, page):
         logging.exception(str(e), _suppress=False)
 
 
+def get_dates_v1(r_timestamp):
+    r_timestart = r_timestamp["timestart"]
+    start_date = datetime.datetime.strptime("%s %s" % (r_timestamp["date"], r_timestart), "%Y-%m-%d %H:%M:%S")
+    start_date = get_epoch_from_datetime(start_date)
+    if r_timestamp.get("timeend", None):
+        end_date = time.strptime(r_timestamp["timeend"], '%H:%M:%S')
+        end_date = long(datetime.timedelta(hours=end_date.tm_hour, minutes=end_date.tm_min,
+                                           seconds=end_date.tm_sec).total_seconds())
+    else:
+        end_date = 0
+    return start_date, end_date
+
+
+def get_dates_v2(r_timestamp):
+    r_timestart = r_timestamp["timestart"]
+    timestamp = long((r_timestamp["date"] + r_timestart) / 1000)
+    tz = pytz.timezone('Europe/Brussels')
+    dt_with_tz = datetime.datetime.fromtimestamp(timestamp, tz)
+    dt_without_tz = datetime.datetime(dt_with_tz.year, dt_with_tz.month, dt_with_tz.day, dt_with_tz.hour,
+                                      dt_with_tz.minute, dt_with_tz.second)
+    time_epoch = get_epoch_from_datetime(dt_without_tz)
+    time_diff = _get_time_diff_uitdatabank(dt_with_tz, dt_without_tz)
+    start_date = time_epoch - time_diff
+    if r_timestamp.get("timeend", None):
+        end_date = int(r_timestamp["timeend"] / 1000) - time_diff
+    else:
+        end_date = 0
+    return start_date, end_date
+
+
+def get_event_start_and_end_dates(timestamps, v2=False):
+    event_start_dates = list()
+    event_end_dates = list()
+
+    def get_dates(r_timestamp):
+        if v2:
+            start_date, end_date = get_dates_v2(r_timestamp)
+        else:
+            start_date, end_date = get_dates_v1(r_timestamp)
+
+        event_start_dates.append(start_date)
+        event_end_dates.append(end_date)
+
+
+    r_timestamp = timestamps["timestamp"]
+    if isinstance(r_timestamp, dict):
+        logging.debug("dict timestamp: %s", r_timestamp)
+        r_timestart = r_timestamp.get("timestart", None)
+        if not r_timestart:
+            logging.info("Skipping event because it had no starttime (dict)")
+            return None, None
+        get_dates(r_timestamp)
+    elif isinstance(r_timestamp, list):
+        logging.debug("list timestamp: %s", r_timestamp)
+        for r_ts in r_timestamp:
+            if r_ts.get("timestart"):
+                get_dates(r_ts)
+
+    return event_start_dates, event_end_dates
+
+
 def _populate_uit_events(sln_settings, uitdatabank_secret, uitdatabank_key, external_id, uitdatabank_actors, changed_since):
     logging.debug("process event with id: %s", external_id)
     detail_success, detail_result = _get_uitdatabank_events_detail(uitdatabank_secret, uitdatabank_key, external_id)
@@ -219,72 +280,9 @@ def _populate_uit_events(sln_settings, uitdatabank_secret, uitdatabank_key, exte
         logging.debug("skipping event because we could not determine starttime")
         return None
 
-    event_last_start_date = 0
-    event_start_dates = list()
-    event_end_dates = list()
-
-    r_timestamp = r_timestamps["timestamp"]
-    if isinstance(r_timestamp, dict):
-        logging.debug("dict timestamp: %s", r_timestamp)
-
-        r_timestart = r_timestamp.get("timestart", None)
-        if not r_timestart:
-            logging.info("Skipping event because it had no starttime (dict)")
-            return None
-
-        if uitdatabank_secret:
-            timestamp = long((r_timestamp["date"] + r_timestart) / 1000)
-            tz = pytz.timezone('Europe/Brussels')
-            dt_with_tz = datetime.datetime.fromtimestamp(timestamp, tz)
-            dt_without_tz = datetime.datetime(dt_with_tz.year, dt_with_tz.month, dt_with_tz.day, dt_with_tz.hour, dt_with_tz.minute)
-            time_epoch = get_epoch_from_datetime(dt_without_tz)
-            time_diff = _get_time_diff_uitdatabank(dt_with_tz, dt_without_tz)
-            event_start_dates.append(time_epoch - time_diff)
-            if r_timestamp.get("timeend", None):
-                event_end_dates = [int(r_timestamp["timeend"] / 1000) - time_diff]
-            else:
-                event_end_dates = [0]
-        else:
-            start_date = datetime.datetime.strptime("%s %s" % (r_timestamp["date"], r_timestart), "%Y-%m-%d %H:%M:%S")
-            event_last_start_date = get_epoch_from_datetime(start_date)
-            event_start_dates = [event_last_start_date]
-            if r_timestamp.get("timeend", None):
-                end_date = time.strptime(r_timestamp["timeend"], '%H:%M:%S')
-                event_end_dates = [long(datetime.timedelta(hours=end_date.tm_hour, minutes=end_date.tm_min, seconds=end_date.tm_sec).total_seconds())]
-            else:
-                event_end_dates = [0]
-    elif isinstance(r_timestamp, list):
-        logging.debug("list timestamp: %s", r_timestamp)
-        for r_ts in r_timestamp:
-            if r_ts.get("timestart", None):
-                if uitdatabank_secret:
-                    timestamp = long((r_ts["date"] + r_ts["timestart"]) / 1000)
-                    tz = pytz.timezone('Europe/Brussels')
-                    dt_with_tz = datetime.datetime.fromtimestamp(timestamp, tz)
-                    dt_without_tz = datetime.datetime(dt_with_tz.year, dt_with_tz.month, dt_with_tz.day, dt_with_tz.hour, dt_with_tz.minute)
-                    time_epoch = get_epoch_from_datetime(dt_without_tz)
-                    time_diff = _get_time_diff_uitdatabank(dt_with_tz, dt_without_tz)
-                    event_start_dates.append(time_epoch - time_diff)
-                    if r_ts.get("timeend", None):
-                        event_end_dates.append(int(r_ts["timeend"] / 1000) - time_diff)
-                    else:
-                        event_end_dates.append(0)
-                else:
-                    start_date = datetime.datetime.strptime("%s %s" % (r_ts["date"], r_ts["timestart"]), "%Y-%m-%d %H:%M:%S")
-                    event_start_dates.append(get_epoch_from_datetime(start_date))
-                    if r_ts.get("timeend", None):
-                        end_date = time.strptime(r_ts["timeend"], '%H:%M:%S')
-                        event_end_dates.append(int(datetime.timedelta(hours=end_date.tm_hour, minutes=end_date.tm_min, seconds=end_date.tm_sec).total_seconds()))
-                    else:
-                        event_end_dates.append(0)
-
-        if event_start_dates:
-            event_last_start_date = max(event_start_dates)
-        else:
-            logging.info("Skipping event because it had no starttime (list)")
-            return None
-    else:
-        logging.warn("could not guess timestamp %s", r_timestamp)
+    event_start_dates, event_end_dates = get_event_start_and_end_dates(r_timestamps, v2=uitdatabank_secret)
+    if not event_start_dates:
+        logging.info("Skipping event because it had no starttime (list)")
         return None
 
     for event in events:
@@ -292,7 +290,7 @@ def _populate_uit_events(sln_settings, uitdatabank_secret, uitdatabank_key, exte
         event.description = event_description
         event.place = event_place
         event.organize = event_organizer
-        event.last_start_date = event_last_start_date
+        event.last_start_date = max(event_start_dates)
         event.start_dates = event_start_dates
         event.end_dates = event_end_dates
         event.first_start_date = event.get_first_event_date()

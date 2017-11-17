@@ -30,14 +30,14 @@ import uuid
 from zipfile import ZipFile, ZIP_DEFLATED
 
 from PIL.Image import Image
-from lxml import etree, html
-
 from babel import Locale
 from babel.dates import format_date, format_datetime, get_timezone
+from lxml import etree, html
+import pytz
+
 from google.appengine.ext import deferred, db
 from mcfw.properties import azzert
 from mcfw.rpc import returns, arguments, serialize_complex_value
-import pytz
 from rogerthat.bizz.friends import ACCEPT_AND_CONNECT_ID
 from rogerthat.bizz.job import run_job
 from rogerthat.bizz.rtemail import generate_user_specific_link, EMAIL_REGEX
@@ -52,7 +52,7 @@ from rogerthat.service.api import messaging, friends, app, system
 from rogerthat.settings import get_server_settings
 from rogerthat.to.messaging import MemberTO, AnswerTO
 from rogerthat.to.service import UserDetailsTO, SendApiCallCallbackResultTO
-from rogerthat.utils import now, file_get_contents, is_flag_set, send_mail_via_mime, format_price, today
+from rogerthat.utils import now, file_get_contents, is_flag_set, send_mail_via_mime, format_price, today, send_mail
 from rogerthat.utils.app import create_app_user_by_email, get_app_user_tuple_by_email, get_app_user_tuple, \
     get_human_user_from_app_user
 from rogerthat.utils.channel import send_message
@@ -1556,7 +1556,7 @@ def send_styled_inbox_forwarders_email_lottery_not_configured(service_user, serv
     img.add_header("Content-Disposition", "inline", filename="Onze Stad App footer")
     mimeRoot.attach(img)
 
-    send_mail_via_mime(settings.senderEmail, sln_i_settings.inbox_mail_forwarders, mimeRoot)
+    send_mail_via_mime(settings.senderEmail, sln_i_settings.inbox_mail_forwarders, mimeRoot) # todo patch
 
 @returns(str)
 @arguments(app_user=users.User, email=unicode, name=unicode)
@@ -1601,13 +1601,6 @@ def send_email_to_user_for_loyalty_update(service_user, service_identity, app_us
 
     subject = common_translate(sln_settings.main_language, SOLUTION_COMMON, "%(app_name)s has 1 new message for you", app_name=app.name)
     user_email = human_user.email()
-    mimeRoot = MIMEMultipart('related')
-    mimeRoot['Subject'] = subject
-    mimeRoot['From'] = server_settings.senderEmail if app.type == App.APP_TYPE_ROGERTHAT else ("%s <%s>" % (app.name, app.dashboard_email_address))
-    mimeRoot['To'] = user_email
-
-    mime = MIMEMultipart('alternative')
-    mimeRoot.attach(mime)
 
     support_email = common_translate(sln_settings.main_language, SOLUTION_COMMON, 'the_our_city_app_coach_email_address')
     support_html = common_translate(sln_settings.main_language, SOLUTION_COMMON, 'the_our_city_app_coach_email_address_html', email=support_email)
@@ -1657,10 +1650,8 @@ def send_email_to_user_for_loyalty_update(service_user, service_identity, app_us
                                        "unsubscribe_info": unsubscribe_info_html,
                                        "team": team})
 
-    mime.attach(MIMEText(body.encode('utf-8'), 'plain', 'utf-8'))
-    mime.attach(MIMEText(body_html.encode('utf-8'), 'html', 'utf-8'))
-
-    send_mail_via_mime(server_settings.senderEmail, user_email, mimeRoot)
+    from_ = server_settings.senderEmail if app.type == App.APP_TYPE_ROGERTHAT else ("%s <%s>" % (app.name, app.dashboard_email_address))
+    send_mail(from_, user_email, subject, body, html=body_html)
 
 
 def create_loyalty_statistics_for_service(service_user, service_identity, first_day_of_last_month, first_day_of_current_month):

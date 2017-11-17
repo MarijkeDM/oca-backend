@@ -50,6 +50,7 @@ from solutions.common.consts import UNITS, UNIT_SYMBOLS, UNIT_PIECE, UNIT_LITER,
     UNIT_MINUTE, ORDER_TYPE_SIMPLE, ORDER_TYPE_ADVANCED, UNIT_PLATTER, UNIT_SESSION, UNIT_PERSON, UNIT_DAY
 from solutions.common.dal import get_solution_settings, get_restaurant_menu, get_solution_email_settings, \
     get_solution_settings_or_identity_settings
+from solutions.common.dal.city_vouchers import get_city_vouchers_settings
 from solutions.common.dal.order import get_solution_order_settings
 from solutions.common.models import SolutionQR
 from solutions.common.models.properties import MenuItem
@@ -90,7 +91,8 @@ MODULES_JS_TEMPLATE_MAPPING = {SolutionModule.AGENDA:           ['events_add',
                                                                  'events_settings',
                                                                  'events_calendar_settings',
                                                                  'events_guests_modal',
-                                                                 'events_guests_table'],
+                                                                 'events_guests_table',
+                                                                 'events_uitcalendar_settings'],
                                SolutionModule.APPOINTMENT: ['timeframe_template'],
                                SolutionModule.ASK_QUESTION:     [],
                                SolutionModule.BILLING:          ['billing_manage_credit_card',
@@ -320,6 +322,10 @@ class FlexHomeHandler(webapp2.RequestHandler):
         if city_app_id and is_signup_enabled(city_app_id):
             functionality_modules, functionality_info = map(json.dumps, get_functionalities(sln_settings))
 
+        vouchers_settings = None
+        if city_app_id and SolutionModule.CITY_VOUCHERS in sln_settings.modules:
+            vouchers_settings = get_city_vouchers_settings(city_app_id)
+
         params = {'stripePublicKey': solution_server_settings.stripe_public_key,
                   'language': sln_settings.main_language or DEFAULT_LANGUAGE,
                   'logo_languages': LOGO_LANGUAGES,
@@ -373,7 +379,8 @@ class FlexHomeHandler(webapp2.RequestHandler):
                   'IS_MOBICAGE_LEGAL_ENTITY': is_mobicage,
                   'LEGAL_ENTITY_CURRENCY': legal_entity_currency,
                   'translations': json.dumps(all_translations),
-                  'organization_types': get_organization_types(customer, sln_settings.main_language)
+                  'organization_types': get_organization_types(customer, sln_settings.main_language),
+                  'vouchers_settings': vouchers_settings
                   }
 
         if SolutionModule.BULK_INVITE in sln_settings.modules:

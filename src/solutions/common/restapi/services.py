@@ -30,7 +30,8 @@ from rogerthat.service.api import system
 from rogerthat.to import ReturnStatusTO, RETURNSTATUS_TO_SUCCESS
 from rogerthat.to.messaging import KeyValueTO
 from rogerthat.utils.channel import send_message_to_session
-from shop.bizz import create_customer_service_to, audit_log, dict_str_for_audit_log, search_customer
+from shop.bizz import create_customer_service_to, audit_log, dict_str_for_audit_log, search_customer, \
+    update_contact
 from shop.business.order import cancel_subscription
 from shop.dal import get_customer
 from shop.exceptions import DuplicateCustomerNameException, NotOperatingInCountryException, EmptyValueException, \
@@ -199,7 +200,7 @@ def rest_put_service(name, address1, address2, zip_code, city, user_email, telep
     customer = Customer.get_by_id(customer_id) if customer_id else None
     # check if the current user is in fact a city app
     if customer and not city_customer.can_edit_service(customer):
-        logging.warn(u'Service {} tried to save service information for customer {}'.format(city_service_user, customer_id))
+        logging.warn(u'Service %s tried to save service information for customer %d', city_service_user, customer.id)
         return CreateServiceStatusTO.create(False, translate(lang, SOLUTION_COMMON, 'no_permission'))
 
     error_msg = warning_msg = None
@@ -211,8 +212,8 @@ def rest_put_service(name, address1, address2, zip_code, city, user_email, telep
         service = create_customer_service_to(name, address1, address1, city, zip_code, user_email, language, city_sln_settings.currency,
                                              telephone, organization_type, city_customer.app_id, broadcast_types, modules)
         (customer, email_changed, is_new_service) \
- = create_customer_with_service(city_customer, customer, service, name, address1, address2, zip_code, city,
-                                language, organization_type, vat, website, facebook_page, force=force)
+            = create_customer_with_service(city_customer, customer, service, name, address1, address2, zip_code, city,
+                                           language, organization_type, vat, website, facebook_page, force=force)
     except EmptyValueException as ex:
         val_name = translate(lang, SOLUTION_COMMON, ex.value_name)
         error_msg = translate(lang, SOLUTION_COMMON, 'empty_field_error', field_name=val_name)
@@ -288,6 +289,22 @@ def rest_delete_service(service_email):
     return RETURNSTATUS_TO_SUCCESS
 
 
+def _fill_signup_data(signup, *prop_names):
+    """Old signups may have data stored in customer_<prop_name> instead of company_<prop-name>"""
+    for prop_name in prop_names:
+        company_prop_name = 'company_' + prop_name
+        current_value = getattr(signup, company_prop_name)
+        if not current_value:
+            setattr(signup, company_prop_name, getattr(signup, 'customer_' + prop_name))
+
+
+def _update_signup_contact(customer, signup):
+    contact = Contact.get_one(customer.key())
+    first_name, _, last_name = signup.customer_name.partition(' ')
+    update_contact(customer.id, contact.id, first_name, last_name, signup.customer_email,
+                   signup.customer_telephone)
+
+
 @rest('/common/signup/services/create', 'post', read_only_access=False)
 @returns(CreateServiceStatusTO)
 @arguments(signup_key=unicode, modules=[unicode], broadcast_types=[unicode], force=bool)
@@ -311,16 +328,21 @@ def rest_create_service_from_signup(signup_key, modules=None, broadcast_types=No
         if not broadcast_types:
             broadcast_types = []
 
+        _fill_signup_data(signup, 'email', 'telephone', 'website', 'facebook_page')
         modules = filter_modules(city_customer, modules, broadcast_types)
-        service = create_customer_service_to(signup.customer_name, signup.customer_address1, None, signup.customer_city,
-                                             signup.customer_zip_code, signup.customer_email, lang, city_sln_settings.currency,
-                                             signup.customer_telephone, signup.company_organization_type, city_customer.app_id,
+        service = create_customer_service_to(signup.company_name, signup.company_address1, None, signup.company_city,
+                                             signup.company_zip_code, signup.company_email, lang, city_sln_settings.currency,
+                                             signup.company_telephone, signup.company_organization_type, city_customer.app_id,
                                              broadcast_types, modules=modules)
         customer = create_customer_with_service(city_customer, None, service, signup.company_name,
-                                                signup.company_address1, None, signup.company_zip_code,
+                                                signup.customer_address1, None, signup.company_zip_code,
                                                 signup.company_city, lang, signup.company_organization_type,
-                                                signup.company_vat, signup.customer_website,
-                                                signup.customer_facebook_page, force=force)[0]
+                                                signup.company_vat, signup.company_website,
+                                                signup.company_facebook_page, force=force)[0]
+
+        # update the contact, as it should be created by now
+        _update_signup_contact(customer, signup)
+
     except EmptyValueException as ex:
         val_name = translate(lang, SOLUTION_COMMON, ex.value_name)
         error_msg = translate(lang, SOLUTION_COMMON, 'empty_field_error', field_name=val_name)

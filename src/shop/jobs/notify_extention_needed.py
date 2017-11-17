@@ -16,25 +16,23 @@
 # @@license_version:1.2@@
 
 from _collections import defaultdict
+import base64
 import datetime
-from dateutil.relativedelta import relativedelta
-from email.mime.application import MIMEApplication
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 import urllib
 
 from babel.dates import format_datetime
-import xlwt
+from dateutil.relativedelta import relativedelta
 
+from google.appengine.ext import db
+from mcfw.utils import chunks
 from rogerthat.consts import DAY
 from rogerthat.models import ServiceProfile
 from rogerthat.settings import get_server_settings
 from rogerthat.translations import DEFAULT_LANGUAGE
-from rogerthat.utils import get_epoch_from_datetime, months_between, send_mail_via_mime, now
-from google.appengine.ext import db
-from mcfw.utils import chunks
+from rogerthat.utils import get_epoch_from_datetime, months_between, send_mail, now
 from shop.models import Order
 from solution_server_settings import get_solution_server_settings
+import xlwt
 
 
 try:
@@ -101,16 +99,10 @@ def job():
         current_date = format_datetime(datetime.datetime.now(), locale=DEFAULT_LANGUAGE)
         
         to_emails = solution_server_settings.shop_customer_extention_emails
-        msg = MIMEMultipart('mixed')
-        msg['Subject'] = 'Customers in need of extention'
-        msg['From'] = solution_server_settings.shop_export_email
-        msg['To'] = ','.join(to_emails)
-        msg["Reply-To"] = solution_server_settings.shop_no_reply_email
-        body = MIMEText('See attachment to help the customers in need', 'plain', 'utf-8')
-        msg.attach(body)
 
-        att = MIMEApplication(excel_string, _subtype='vnd.ms-excel')
-        att.add_header('Content-Disposition', 'attachment', filename='Prospects %s.xls' % (current_date))
-        msg.attach(att)
-
-        send_mail_via_mime(settings.senderEmail, to_emails, msg)
+        attachments = []
+        attachments.append(('Prospects %s.xls' % current_date,
+                            base64.b64encode(excel_string)))
+        subject = 'Customers in need of extention'
+        message ='See attachment to help the customers in need'
+        send_mail(solution_server_settings.shop_export_email, to_emails, subject,  message, attachments=attachments)

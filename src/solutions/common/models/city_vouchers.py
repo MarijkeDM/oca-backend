@@ -21,7 +21,7 @@ import hashlib
 from google.appengine.ext import db
 from rogerthat.dal import parent_key_unsafe
 from rogerthat.rpc import users
-from rogerthat.utils import base38
+from rogerthat.utils import base38, today
 from rogerthat.utils.service import get_service_user_from_service_identity_user, get_identity_from_service_identity_user
 from solutions.common import SOLUTION_COMMON
 from solutions.common.utils import create_service_identity_user_wo_default
@@ -31,16 +31,18 @@ class SolutionCityVoucherSettings(db.Model):
 
     usernames = db.StringListProperty(indexed=False)
     pincodes = db.StringListProperty(indexed=False)
-    
+
+    validity = db.IntegerProperty(indexed=False)  # in months
+
     @property
     def app_id(self):
         return self.key().name()
-    
+
     @classmethod
     def create_key(cls, app_id):
         return db.Key.from_path(cls.kind(), app_id)
-    
-    
+
+
 class SolutionCityVoucherTransaction(db.Model):
 
     ACTION_CREATED = 1
@@ -52,7 +54,7 @@ class SolutionCityVoucherTransaction(db.Model):
     value = db.IntegerProperty(indexed=False)
     service_user = db.UserProperty(indexed=False)
     service_identity = db.StringProperty(indexed=False)
-    
+
     @property
     def action_str(self):
         if self.action == SolutionCityVoucherTransaction.ACTION_CREATED:
@@ -70,22 +72,25 @@ class SolutionCityVoucherRedeemTransaction(db.Model):
     value = db.IntegerProperty(indexed=False)
     voucher_key = db.StringProperty(indexed=False)
     signature = db.StringProperty(indexed=False)
-    
+
     @property
     def service_identity_user(self):
         return users.User(self.parent_key().name())
-    
+
 
 class SolutionCityVoucher(db.Model):
     TYPE = u'city_voucher'
-    
+
     image_uri = db.StringProperty(indexed=False)
     content_uri = db.StringProperty(indexed=False)
 
     created = db.IntegerProperty(indexed=True)
     activated = db.BooleanProperty(indexed=True, default=False)
+    activation_date = db.IntegerProperty(indexed=False)
     redeemed = db.BooleanProperty(indexed=True, default=False)
-    
+    expiration_date = db.IntegerProperty(indexed=True)
+    expiration_reminders_sent = db.ListProperty(int, default=[])
+
     username = db.StringProperty(indexed=False)
     internal_account = db.StringProperty(indexed=False)
     cost_center = db.StringProperty(indexed=False)
@@ -94,6 +99,8 @@ class SolutionCityVoucher(db.Model):
 
     value = db.IntegerProperty(indexed=False)
     redeemed_value = db.IntegerProperty(indexed=False)
+    owner = db.UserProperty(indexed=False)
+    owner_name = db.StringProperty(indexed=False)
 
     @property
     def key_str(self):
@@ -108,15 +115,19 @@ class SolutionCityVoucher(db.Model):
     def app_id(self):
         return self.parent_key().name()
 
+    @property
+    def expired(self):
+        return self.expiration_date and self.expiration_date <= today()
+
     @classmethod
     def create_parent_key(cls, app_id):
         return db.Key.from_path(u"city_wide_voucher", app_id)
-    
+
     def load_transactions(self):
         qry = SolutionCityVoucherTransaction.all().ancestor(self)
         qry.order('-created')
         return qry
-    
+
     def signature(self):
         digester = hashlib.sha256()
         digester.update(str(self.created))
@@ -128,7 +139,7 @@ class SolutionCityVoucher(db.Model):
             digester.update(self.cost_center.encode("utf8"))
         digester.update(str(self.value))
         digester.update(str(self.redeemed_value))
-        
+
         for t in self.load_transactions():
             digester.update(str(t.created))
             digester.update(str(t.action))
@@ -136,7 +147,7 @@ class SolutionCityVoucher(db.Model):
             if t.service_user:
                 digester.update(t.service_user.email().encode("utf8"))
                 digester.update(t.service_identity)
-        
+
         return digester.hexdigest()
 
 
@@ -154,26 +165,26 @@ class SolutionCityVoucherQRCodeExport(db.Model):
     @classmethod
     def create_parent_key(cls, app_id):
         return db.Key.from_path(u"city_wide_voucher", app_id)
-    
-    
+
+
 class SolutionCityVoucherExport(db.Model):
     xls = db.BlobProperty()
     year_month = db.IntegerProperty()  # 201606
-    
+
     @classmethod
     def create_parent_key(cls, app_id):
         return db.Key.from_path(u"city_wide_voucher", app_id)
-    
+
     @classmethod
     def create_key(cls, app_id, year, month):
         ancestor_key = cls.create_parent_key(app_id)
         return db.Key.from_path(cls.kind(), '%s_%s' % (year, month), parent=ancestor_key)
-    
+
 
 class SolutionCityVoucherExportMerchant(db.Model):
     xls = db.BlobProperty()
     year_month = db.IntegerProperty()  # 201606
-    
+
     @property
     def service_identity_user(self):
         return users.User(self.parent_key().name())

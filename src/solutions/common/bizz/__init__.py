@@ -62,7 +62,7 @@ from rogerthat.to.friends import ServiceMenuDetailTO, ServiceMenuItemLinkTO
 from rogerthat.to.messaging import BaseMemberTO
 from rogerthat.to.messaging.flow import FormFlowStepTO, FLOW_STEP_MAPPING
 from rogerthat.translations import DEFAULT_LANGUAGE
-from rogerthat.utils import generate_random_key, parse_color, channel, bizz_check, now, send_mail_via_mime
+from rogerthat.utils import generate_random_key, parse_color, channel, bizz_check, now
 from rogerthat.utils.app import get_app_user_tuple
 from rogerthat.utils.location import geo_code, GeoCodeStatusException, GeoCodeZeroResultsException
 from rogerthat.utils.transactions import run_in_transaction
@@ -784,34 +784,6 @@ def create_pdf(src, path, default_css=None):
     return output_stream.getvalue()
 
 
-def send_email(subject, from_email, to_emails, bcc_emails, reply_to, body_text, attachments=None,
-               attachment_types=None, attachment_names=None, html_body=None):
-    msg_root = MIMEMultipart('mixed')
-    msg_root['Subject'] = subject
-    msg_root['From'] = from_email
-    msg_root['To'] = ','.join(to_emails)
-    msg_root['Bcc'] = ','.join(bcc_emails)
-    msg_root["Reply-To"] = reply_to
-    msg = MIMEMultipart('alternative')
-    msg_root.attach(msg)
-    body = MIMEText(body_text.encode('utf-8'), 'plain', 'utf-8')
-    msg.attach(body)
-
-    if html_body:
-        html_part = MIMEMultipart('related')
-        msg.attach(html_part)
-        html_part.attach(MIMEText(html_body.encode('utf-8'), 'html', 'utf-8'))
-
-    if attachments:
-        for attachment, attachment_type, name, in zip(attachments, attachment_types, attachment_names):
-            att = MIMEApplication(attachment, _subtype=attachment_type)
-            att.add_header('Content-Disposition', 'attachment', filename=name)
-            msg_root.attach(att)
-
-    settings = get_server_settings()
-    send_mail_via_mime(settings.senderEmail, to_emails, msg_root)
-
-
 @returns(FileBlob)
 @arguments(service_user=User, content=str)
 def create_file_blob(service_user, content):
@@ -835,32 +807,37 @@ def delete_file_blob(service_user, file_id):
         logging.info('FileBlob with id %s has already been deleted' % file_id)
 
 
+@returns(unicode)
+@arguments(key=unicode, language=unicode)
+def try_to_translate(key, language):
+    try:
+        return common_translate(language, SOLUTION_COMMON, key, suppress_warning=True)
+    except:
+        return key
+
+
+@returns(dict)
+@arguments(sln_settings=SolutionSettings)
+def get_translated_broadcast_types(sln_settings):
+    translated_broadcast_types = {}
+    for bt in sln_settings.broadcast_types:
+        bt_trans = try_to_translate(bt, sln_settings.main_language)
+        translated_broadcast_types[bt_trans] = bt
+    return translated_broadcast_types
+
+
 @returns()
 @arguments(service_user=users.User, broadcast_types=[unicode])
 def save_broadcast_types_order(service_user, broadcast_types):
-    def transl(key, language):
-        try:
-            return common_translate(language, SOLUTION_COMMON, key, suppress_warning=True)
-        except:
-            return key
-
     def trans():
         sln_settings = get_solution_settings(service_user)
 
-        broadcastTypesMapCUSTOM_EN = {}
-        for bt in sln_settings.broadcast_types:
-            bt_trans = transl(bt, sln_settings.main_language)
-            broadcastTypesMapCUSTOM_EN[bt_trans] = bt
+        translated_broadcast_types = get_translated_broadcast_types(sln_settings)
+        diff = set(translated_broadcast_types).symmetric_difference(broadcast_types)
+        if diff:
+            raise InvalidBroadcastTypeException(diff.pop())
 
-        for bt in broadcast_types:
-            if bt not in broadcastTypesMapCUSTOM_EN:
-                raise InvalidBroadcastTypeException(bt)
-
-        for bt in broadcastTypesMapCUSTOM_EN:
-            if bt not in broadcast_types:
-                raise InvalidBroadcastTypeException(bt)
-
-        sln_settings.broadcast_types = [broadcastTypesMapCUSTOM_EN[bt] for bt in broadcast_types]
+        sln_settings.broadcast_types = [translated_broadcast_types[bt] for bt in broadcast_types]
         sln_settings.updates_pending = True
         put_and_invalidate_cache(sln_settings)
         broadcast_updates_pending(sln_settings)

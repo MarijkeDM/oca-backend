@@ -85,6 +85,9 @@ def _worker(sln_settings_key):
 
 def _broadcast(sln_settings_key, sandwich_settings_key):
     sln_settings, sandwich_settings = db.get([sln_settings_key, sandwich_settings_key])
+    if not sln_settings:
+        logging.info("Service has been deleted in the meantime")
+        return
     solution_datetime = datetime.now(pytz.timezone(sln_settings.timezone))
     if not sandwich_settings.can_order_sandwiches_on(solution_datetime):
         logging.info("No email_reminders anymore today for %s", sln_settings.service_user.email())

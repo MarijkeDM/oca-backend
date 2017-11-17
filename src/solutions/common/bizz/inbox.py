@@ -27,6 +27,7 @@ import time
 from types import NoneType
 
 from babel.dates import format_datetime
+
 from google.appengine.ext import deferred, db
 import jinja2
 from mcfw.properties import long_property
@@ -42,7 +43,7 @@ from rogerthat.service.api import system
 from rogerthat.settings import get_server_settings
 from rogerthat.to.service import UserDetailsTO
 from rogerthat.translations import DEFAULT_LANGUAGE
-from rogerthat.utils import send_mail_via_mime, now
+from rogerthat.utils import send_mail_via_mime, now, send_mail
 from rogerthat.utils.models import reconstruct_key
 from rogerthat.utils.transactions import run_in_transaction
 from shop.constants import LOGO_LANGUAGES
@@ -50,7 +51,7 @@ from shop.exceptions import InvalidEmailFormatException
 from solutions import translate as common_translate
 import solutions
 from solutions.common import SOLUTION_COMMON
-from solutions.common.bizz import SolutionModule, send_email, create_pdf
+from solutions.common.bizz import SolutionModule, create_pdf
 from solutions.common.bizz.broadcast_statistics import get_broadcast_statistics_excel
 from solutions.common.bizz.loyalty import update_user_data_admins
 from solutions.common.dal import get_solution_settings, get_solution_settings_or_identity_settings
@@ -198,7 +199,7 @@ def send_styled_inbox_forwarders_email(service_user, str_key, msg_params, remind
     img.add_header("Content-Disposition", "inline", filename="Onze Stad App footer")
     mimeRoot.attach(img)
 
-    send_mail_via_mime(settings.senderEmail, sln_i_settings.inbox_mail_forwarders, mimeRoot)
+    send_mail_via_mime(settings.senderEmail, sln_i_settings.inbox_mail_forwarders, mimeRoot) # todo patch
 
     if not reminder:
         if str_key:
@@ -457,16 +458,15 @@ def _deferred_statistics_email_export(service_user, service_identity, lang, emai
     attachment_name_inbox_excel = 'Inbox messages ' + cur_date + '.xls'
     attachment_name_broadcast_statistics = common_translate(lang, SOLUTION_COMMON, 'broadcast_statistics') + '.xls'
     attachment_name_flow_statistics_excel = 'Flow statistics ' + cur_date + '.xls'
-    attachments = [messages_pdf, message_statistics_excel, broadcast_statistics, flow_statistics_excel]
-    attachment_types = ['pdf', 'vnd.ms-excel', 'vnd.ms-excel', 'vnd.ms-excel']
-    attachment_names = [attachment_name_pdf, attachment_name_inbox_excel, attachment_name_broadcast_statistics,
-                        attachment_name_flow_statistics_excel]
-    send_email(subject=subject,
-               from_email=MC_DASHBOARD.email(),
-               to_emails=[email],
-               bcc_emails='',
-               reply_to='',
-               body_text=body_text,
-               attachments=attachments,
-               attachment_types=attachment_types,
-               attachment_names=attachment_names)
+    
+    attachments = []
+    attachments.append((attachment_name_pdf,
+                        base64.b64encode(messages_pdf)))
+    attachments.append((attachment_name_inbox_excel,
+                        base64.b64encode(message_statistics_excel)))
+    attachments.append((attachment_name_broadcast_statistics,
+                        base64.b64encode(broadcast_statistics)))
+    attachments.append((attachment_name_flow_statistics_excel,
+                        base64.b64encode(flow_statistics_excel)))
+    
+    send_mail(MC_DASHBOARD.email(), email, subject, body_text, attachments=attachments)

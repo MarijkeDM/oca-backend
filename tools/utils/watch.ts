@@ -1,11 +1,17 @@
-import * as gulpLoadPlugins from 'gulp-load-plugins';
+import * as gulpWatch from 'gulp-watch';
 import { join } from 'path';
 import * as runSequence from 'run-sequence';
-
-import { changeFileManager } from './code_change_tools';
 import { config } from '../config/config';
 
-const plugins = <any>gulpLoadPlugins();
+import { changeFileManager } from './code_change_tools';
+
+if (process.platform === 'darwin') {
+  try {
+    require('fsevents');
+  } catch (err) {
+    throw new Error('Could not require fsevents, please execute `npm install` again.');
+  }
+}
 
 /**
  * Watches the task with the given taskname.
@@ -17,7 +23,7 @@ export function watch(taskname: string) {
       ...config.SOURCE_ROOTS.map(root => join(root, '**')),
       ...config.TEMP_FILES.map(temp => '!' + temp) ];
 
-    plugins.watch(paths, (e: any) => {
+    gulpWatch(paths, (e: any) => {
       changeFileManager.addFile(e.path);
 
       // Resolves issue in IntelliJ and other IDEs/text editors which save multiple files at once.
