@@ -18,10 +18,14 @@
 import json
 import logging
 
+from google.appengine.ext import db
 import webapp2
 
+from mcfw.rpc import serialize_complex_value
 from rogerthat.consts import DEBUG
+from rogerthat.dal.profile import get_service_profile
 from rogerthat.models import ServiceProfile, UserProfile
+from rogerthat.rpc import users
 
 
 class ServicerMigrationHandler(webapp2.RequestHandler):
@@ -32,17 +36,23 @@ class ServicerMigrationHandler(webapp2.RequestHandler):
 
         if path == u'users':
             export_users(self)
-            return
-        if path == u'services':
+
+        elif path == u'services':
             export_services(self)
-            return
 
-        self.abort(404)
+        elif path == u'service/create_api_key':
+            service_create_api_key(self)
+
+        elif path == u'service/config':
+            export_service_config(self)
+
+        else:
+            self.abort(404)
 
 
+# # USER ####
 def export_users(self):
     cursor = self.request.get("cursor", None)
-    logging.debug("export_users with cursor: '%s'", cursor)
 
     qry = UserProfile.all()
     qry.with_cursor(cursor)
@@ -55,15 +65,17 @@ def export_users(self):
     for up in ups:
         if not up.owningServiceEmails:
             continue
-        l.append({"email": up.user.email(), "services": up.owningServiceEmails})
+        l.append({"email": up.user.email(),
+                  "password_hash": up.passwordHash,
+                  "services": up.owningServiceEmails})
 
     new_cursor = unicode(qry.cursor())
     self.response.write(json.dumps({"cursor": new_cursor, "l": l}))
 
 
+# # SERVICE ####
 def export_services(self):
     cursor = self.request.get("cursor", None)
-    logging.debug("export_services with cursor: '%s'", cursor)
 
     qry = ServiceProfile.all()
     qry.with_cursor(cursor)
@@ -76,7 +88,38 @@ def export_services(self):
     for sp in sps:
         if not sp.solution:
             continue
-        l.append({"email": sp.user.email(), "solution": sp.solution})
+        l.append({"email": sp.user.email(),
+                  "password_hash": sp.passwordHash,
+                  "solution": sp.solution})
 
     new_cursor = unicode(qry.cursor())
     self.response.write(json.dumps({"cursor": new_cursor, "l": l}))
+
+
+def service_create_api_key(self):
+    from rogerthat.bizz.service import get_configuration, _generate_api_key
+    from rogerthat.to.service import ServiceConfigurationTO
+
+    id_ = self.request.get("id", None)
+    service_user = users.User(id_)
+    config = get_configuration(service_user)
+    should_generate_api_key = True
+    for api_key in config.apiKeys:
+        if api_key.name == u"oca_dashboard":
+            should_generate_api_key = False
+            break
+
+    if should_generate_api_key:
+        _generate_api_key(service_user, u'oca_dashboard').put()
+
+
+def export_service_config(self):
+    from rogerthat.bizz.service import get_configuration
+    from rogerthat.to.service import ServiceConfigurationTO
+
+    id_ = self.request.get("id", None)
+
+    service_user = users.User(id_)
+    config = get_configuration(service_user)
+
+    self.response.write(json.dumps({"config": serialize_complex_value(config, ServiceConfigurationTO, False)}))
