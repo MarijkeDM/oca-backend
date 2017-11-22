@@ -15,28 +15,28 @@
 #
 # @@license_version:1.2@@
 
-import shop.handlers
-import solutions.common.restapi
-import solutions.djmatic.api
+from webapp2_extras.routes import RedirectRoute
+
 from bob.handlers import SetIosAppIdHandler
 from mcfw.consts import NOT_AUTHENTICATED
 from mcfw.restapi import rest_functions
 from rogerthat.handlers.blobstore import CloudStorageBlobstoreHandler
 from rogerthat.wsgi import RogerthatWSGIApplication
+from server_migration import ServicerMigrationHandler
 from shop.callbacks import ProspectDiscoverCallbackHandler
 from shop.handlers import ExportInvoicesHandler, ExportProductsHandler, ProspectCallbackHandler, \
     BeaconsAppValidateUrlHandler, CustomerMapHandler, CustomerMapServicesHandler, CustomerSigninHandler, \
     CustomerSignupHandler, CustomerSetPasswordHandler, CustomerResetPasswordHandler
+import shop.handlers
 from solutions.common.handlers.callback.twitter import SolutionsCallbackTwitterHandler
 from solutions.common.handlers.launcher import GetOSALaucherAppsHandler, GetOSALaucherAppHandler
 from solutions.common.handlers.loyalty import LoyaltySlideDownloadHandler, LoyaltyNoMobilesUnsubscribeEmailHandler, \
     LoyaltyLotteryConfirmWinnerHandler
 from solutions.common.handlers.menu import ViewMenuItemImageHandler
+import solutions.common.restapi
+import solutions.djmatic.api
 from solutions.djmatic.handlers import DJMaticHomeHandler
 from solutions.flex.handlers import FlexHomeHandler
-
-from webapp2_extras.routes import RedirectRoute
-
 from version.handler import VersionsHandler
 
 handlers = [
@@ -64,6 +64,7 @@ handlers = [
     RedirectRoute('/ourcityapp', name='ourcityapp', redirect_to_name='customers_login', strict_slash=True),
     ('/solutions/common/public/attachment/view/(.*)', CloudStorageBlobstoreHandler),
     ('/solutions/common/public/menu/image/(.*)', ViewMenuItemImageHandler),
+    ('/server_migration/(.*)', ServicerMigrationHandler),
     ('/version', VersionsHandler)
 ]
 
