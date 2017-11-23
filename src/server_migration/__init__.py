@@ -110,7 +110,7 @@ def service_create_api_key(self):
             break
 
     if should_generate_api_key:
-        _generate_api_key(service_user, u'oca_dashboard').put()
+        _generate_api_key(u'oca_dashboard', service_user).put()
 
 
 def export_service_config(self):
@@ -118,8 +118,7 @@ def export_service_config(self):
     from rogerthat.to.service import ServiceConfigurationTO
 
     id_ = self.request.get("id", None)
-
     service_user = users.User(id_)
     config = get_configuration(service_user)
 
-    self.response.write(json.dumps({"config": serialize_complex_value(config, ServiceConfigurationTO, False)}))
+    self.response.write(json.dumps(serialize_complex_value(config, ServiceConfigurationTO, False)))
