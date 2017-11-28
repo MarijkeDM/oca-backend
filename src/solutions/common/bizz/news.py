@@ -99,9 +99,11 @@ def _save_coupon_news_id(news_item_id, coupon):
     coupon.put()
 
 
-def app_uses_custom_organization_types(app_id, language):
+def _app_uses_custom_organization_types(language):
     """Check if the app has any translated organization type"""
-    translations = app.get_translations(app_id, language)
+    translations = {
+        translation.key: translation.value for translation in app.get_translations(language)
+    }
 
     if translations:
         for translation_key in OrganizationType.TRANSLATION_KEYS.values():
@@ -236,7 +238,7 @@ def put_news_item(service_identity_user, title, message, broadcast_type, sponsor
             customer = get_customer(service_user)
             sticky = sponsored or (
                 customer.organization_type == OrganizationType.CITY and \
-                not app_uses_custom_organization_types(default_app.app_id, customer.language))
+                not _app_uses_custom_organization_types(customer.language))
 
             def trans():
                 news_item = news.publish(accept_missing=True, sticky=sticky, **kwargs)
