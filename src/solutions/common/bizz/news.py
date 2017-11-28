@@ -35,7 +35,7 @@ from rogerthat.models import App
 from rogerthat.models.news import NewsItem, NewsItemImage
 from rogerthat.rpc import users
 from rogerthat.rpc.service import BusinessException
-from rogerthat.service.api import news
+from rogerthat.service.api import app, news
 from rogerthat.settings import get_server_settings
 from rogerthat.to.news import NewsActionButtonTO, NewsTargetAudienceTO
 from rogerthat.utils import now, channel
@@ -48,7 +48,7 @@ from shop.dal import get_customer
 from shop.exceptions import NoCreditCardException, AppNotFoundException
 from shop.models import Contact, Product, RegioManagerTeam, Order, OrderNumber, OrderItem, Charge
 from shop.to import OrderItemTO
-from solutions.common.bizz import SolutionModule, facebook, twitter
+from solutions.common.bizz import SolutionModule, OrganizationType, facebook, twitter
 from solutions.common.dal import get_solution_settings
 from solutions.common.models import SolutionScheduledBroadcast
 from solutions.common.models.news import NewsCoupon
@@ -97,6 +97,18 @@ def _save_coupon_news_id(news_item_id, coupon):
     """
     coupon.news_id = news_item_id
     coupon.put()
+
+
+def app_uses_custom_organization_types(app_id, language):
+    """Check if the app has any translated organization type"""
+    translations = app.get_translations(app_id, language)
+
+    if translations:
+        for translation_key in OrganizationType.TRANSLATION_KEYS.values():
+            if translations.get(translation_key):
+                return True
+
+    return False
 
 
 @returns(NewsBroadcastItemTO)
@@ -180,8 +192,8 @@ def put_news_item(service_identity_user, title, message, broadcast_type, sponsor
         app_ids.append(App.APP_ID_ROGERTHAT)
     if default_app.demo and App.APP_ID_ROGERTHAT in app_ids:
         app_ids.remove(App.APP_ID_ROGERTHAT)
+
     kwargs = {
-        'sticky': sponsored,
         'sticky_until': sponsored_until,
         'message': message,
         'broadcast_type': broadcast_type,
@@ -221,8 +233,13 @@ def put_news_item(service_identity_user, title, message, broadcast_type, sponsor
 
     with users.set_user(service_user):
         try:
+            customer = get_customer(service_user)
+            sticky = sponsored or (
+                customer.organization_type == OrganizationType.CITY and \
+                not app_uses_custom_organization_types(default_app.app_id, customer.language))
+
             def trans():
-                news_item = news.publish(accept_missing=True, **kwargs)
+                news_item = news.publish(accept_missing=True, sticky=sticky, **kwargs)
                 if should_save_coupon:
                     _save_coupon_news_id(news_item.id, coupon)
                 elif news_type == NewsItem.TYPE_QR_CODE and qr_code_caption is not MISSING and qr_code_caption and news_id:

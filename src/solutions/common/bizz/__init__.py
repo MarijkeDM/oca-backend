@@ -207,6 +207,14 @@ class OrganizationType(Enum):
     CITY = 3
     EMERGENCY = 4
 
+    TRANSLATION_KEYS = {
+        UNSPECIFIED: 'Services',
+        NON_PROFIT: 'Associations',
+        PROFIT: 'Merchants',
+        CITY: 'Community Services',
+        EMERGENCY: 'Care',
+    }
+
 
 class SolutionServiceMenuItem(object):
     icon_name = unicode_property('1')
