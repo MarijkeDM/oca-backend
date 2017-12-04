@@ -17,28 +17,25 @@
 
 from collections import defaultdict
 from datetime import datetime
-from email.mime.application import MIMEApplication
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 import importlib
 import logging
 import os
 import time
 from types import NoneType
 
-from PIL.Image import Image
-from babel.dates import format_date, format_time
-import pytz
-
 from google.appengine.api import urlfetch
 from google.appengine.ext import db, deferred
 from google.appengine.ext.webapp import template
+
+from PIL.Image import Image
+from babel.dates import format_date, format_time
 from mcfw.cache import cached
 from mcfw.consts import MISSING
 from mcfw.properties import object_factory, unicode_property, long_list_property, bool_property, unicode_list_property, \
     azzert, long_property, typed_property
 from mcfw.rpc import returns, arguments
 from mcfw.utils import Enum
+import pytz
 from rogerthat.bizz.branding import is_branding
 from rogerthat.bizz.rtemail import generate_auto_login_url, EMAIL_REGEX
 from rogerthat.bizz.service import create_service, validate_and_get_solution, InvalidAppIdException, \

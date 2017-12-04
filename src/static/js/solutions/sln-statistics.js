@@ -41,7 +41,6 @@ $(function() {
     };
 
     var elemStatistics = $("#statistics");
-    var elemSectionAppBroadcasts = $('#section_app_broadcasts');
 
     var FRIENDS_TEMPLATE = '{{each(i,friend) friends}}' //
             + ' <div class="thumbnail statistics-user-avatar">' //
@@ -168,9 +167,6 @@ $(function() {
                 var totalUsers = data.number_of_users;
                 if (totalUsers > 0) {
                     $("li[menu='statistics']").removeClass('disabled');
-                }
-                if (result.has_app_broadcasts) {
-                    elemStatistics.find('li[section=section_app_broadcasts]').show().click(showAppBroadcasts);
                 }
 
                 showUsage(data.menu_item_press);
@@ -379,97 +375,4 @@ $(function() {
             }
         });
     });
-
-    function showAppBroadcasts() {
-        if (appBroadcasts.loaded) {
-            return;
-        }
-        elemSectionAppBroadcasts.html(TMPL_LOADING_SPINNER);
-        sln.call({
-            url: '/common/statistics/app_broadcasts',
-            success: function (data) {
-                appBroadcasts.loaded = true;
-                appBroadcasts.data = data;
-                var chartNumber = 0;
-                elemSectionAppBroadcasts.html('<div class="row"></div>');
-                var row = elemSectionAppBroadcasts.find('.row');
-                if (!appBroadcasts.data.messages.length) {
-                    // hide tab
-                    return;
-                }
-                appBroadcasts.data.flow_statistics.flow_statistics.reverse();
-                appBroadcasts.data.messages.reverse();
-                elemSectionAppBroadcasts.show();
-                $.each(appBroadcasts.data.flow_statistics.flow_statistics, function (i, statistic) {
-                    // Chart per flow
-                    var connectedChart = [
-                        [CommonTranslations.status, CommonTranslations.amount_of_users]
-                    ];
-                    var notConnectedChart = [
-                        [CommonTranslations.status, CommonTranslations.amount_of_users]
-                    ];
-                    $.each(statistic.steps, function (i, step) {
-                        var read = [CommonTranslations.Read, getTotalCount(step.read_count)];
-                        var received = [CommonTranslations.received, getTotalCount(step.received_count)];
-                        if (step.step_id === 'Connected') {
-                            connectedChart.push(received);
-                            connectedChart.push(read);
-                        }
-                        else if (step.step_id === 'Not connected') {
-                            notConnectedChart.push(received);
-                            notConnectedChart.push(read);
-                            // Get number of users who pressed on 'Connect'
-                            // Stats are grouped per year, count everything together
-                            var connectedCount = 0;
-                            var btn = step.buttons.filter(function (b) {
-                                return b.button_id === 'accepted';
-                            })[0];
-                            if (btn) {
-                                connectedCount = getTotalCount(btn.acked_count);
-                            }
-                            var pressedConnected = [CommonTranslations.connected, connectedCount];
-                            notConnectedChart.push(pressedConnected);
-                        }
-                    });
-                    var date = new Date(parseInt(statistic.tag.replace('__rt__.app_broadcast ', '')) * 1000);
-                    row.append('<h3>' + sln.format(date) + '</h3>');
-                    row.append('<p>' + appBroadcasts.data.messages[i].replace(/(?:\r\n|\r|\n)/g, '<br />') + '</p>');
-                    if (connectedChart.length > 1) {
-                        createChart({
-                            title: CommonTranslations['connected-users'],
-                            with: 400,
-                            height: 300,
-                            legend: {position: 'none'}
-                        }, connectedChart);
-                    }
-                    if (notConnectedChart.length > 1) {
-                        createChart({
-                            title: CommonTranslations.not_connected_users,
-                            with: 400,
-                            height: 300,
-                            legend: {position: 'none'}
-                        }, notConnectedChart);
-                    }
-                });
-
-                function getTotalCount(yearStats) {
-                    var count = 0;
-                    yearStats.map(function (s) {
-                        count += s.count;
-                    });
-                    return count;
-                }
-
-                function createChart(options, data) {
-                    var chartElem = document.createElement('div');
-                    chartElem.className = 'span6';
-                    chartElem.id = 'chart-' + chartNumber;
-                    chartNumber++;
-                    var chart = new google.visualization.ColumnChart(chartElem);
-                    chart.draw(google.visualization.arrayToDataTable(data), options);
-                    row.append(chartElem);
-                }
-            }
-        });
-    }
 });

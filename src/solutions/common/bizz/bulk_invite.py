@@ -21,7 +21,6 @@ from types import NoneType
 
 from google.appengine.ext import deferred, db
 from mcfw.rpc import returns, arguments, serialize_complex_value
-from rogerthat.bizz.job.app_broadcast import APP_BROADCAST_TAG
 from rogerthat.rpc import users
 from rogerthat.service.api import system
 from rogerthat.to.service import UserDetailsTO
@@ -116,7 +115,7 @@ def bulk_invite_result(service_user, service_identity, tag, email, result, user_
         logging.exception("Expected tag in bulk_invite_result")
         return
 
-    if tag in (SERVICE_AUTOCONNECT_INVITE_TAG, APP_BROADCAST_TAG):
+    if tag in (SERVICE_AUTOCONNECT_INVITE_TAG,):
         return
 
     try:

@@ -23,7 +23,7 @@ var SHOP_PAGES = {
 };
 var STORE_PRODUCTS = []; // loaded via ajax call
 var PRODUCT_SHORT_NAMES = {
-    BEAC: CommonTranslations.beacon,
+//    BEAC: CommonTranslations.beacon, // remove beacon product
     XCTY: CommonTranslations.apps,
     POSM: CommonTranslations.flyers,
     BNNR: CommonTranslations.rollup_banner,

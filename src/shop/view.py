@@ -16,22 +16,22 @@
 # @@license_version:1.2@@
 
 import base64
+from cgi import FieldStorage
+from collections import namedtuple
 import csv
+from datetime import date, timedelta
 import datetime
 import json
 import logging
 import os
 import re
-import urllib
-from cgi import FieldStorage
-from collections import namedtuple
-from datetime import date, timedelta
 from types import NoneType
+import urllib
 
-import webapp2
 from google.appengine.api import urlfetch, users as gusers
 from google.appengine.ext import db, deferred
 from google.appengine.ext.webapp import template
+import webapp2
 
 from PIL.Image import Image  # @UnresolvedImport
 from PyPDF2.merger import PdfFileMerger
@@ -73,7 +73,7 @@ from shop.bizz import search_customer, create_or_update_customer, \
     get_invoices, get_regiomanager_statistics, get_prospect_history, get_payed, put_surrounding_apps, \
     create_contact, create_order, export_customers_csv, put_service, update_contact, put_regio_manager_team, \
     user_has_permissions_to_team, get_regiomanagers_by_app_id, delete_contact, cancel_order, \
-    finish_on_site_payment, send_payment_info, manual_payment, post_app_broadcast, shopOauthDecorator, \
+    finish_on_site_payment, send_payment_info, manual_payment, shopOauthDecorator, \
     regio_manager_has_permissions_to_team, get_customer_charges, is_team_admin, user_has_permissions_to_question, \
     put_app_signup_enabled, sign_order
 from shop.business.charge import cancel_charge
@@ -2217,20 +2217,6 @@ def get_product_translations(language):
 @arguments(app_id=unicode, amount=(int, long), mode=unicode)
 def rest_generate_qr_codes(app_id, amount, mode):
     return wrap_with_result_status(generate_unassigned_qr_codes_zip_for_app, app_id, amount, mode)
-
-
-@rest("/internal/shop/rest/customer/app_broadcast", "post")
-@returns(ReturnStatusTO)
-@arguments(service=unicode, app_ids=[unicode], message=unicode)
-def app_broadcast(service, app_ids, message):
-    return wrap_with_result_status(post_app_broadcast, service, app_ids, message)
-
-
-@rest("/internal/shop/rest/customer/test_app_broadcast", "post")
-@returns(ReturnStatusTO)
-@arguments(service=unicode, app_ids=[unicode], message=unicode, tester=unicode)
-def test_app_broadcast(service, app_ids, message, tester):
-    return wrap_with_result_status(post_app_broadcast, service, app_ids, message, tester)
 
 
 @rest("/internal/shop/customer/charges", "get")

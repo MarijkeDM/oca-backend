@@ -15,21 +15,9 @@
 #
 # @@license_version:1.2@@
 
-from mcfw.properties import typed_property, unicode_list_property, bool_property
-from rogerthat.to.statistics import FlowStatisticsListResultTO, ServiceIdentityStatisticsTO
+from mcfw.properties import typed_property
+from rogerthat.to.statistics import ServiceIdentityStatisticsTO
 
 
 class StatisticsResultTO(object):
     service_identity_statistics = typed_property('1', ServiceIdentityStatisticsTO, False)
-    has_app_broadcasts = bool_property('2')
-
-
-class AppBroadcastStatisticsTO(object):
-    flow_statistics = typed_property('1', FlowStatisticsListResultTO, False)
-    messages = unicode_list_property('2')
-
-    def __init__(self, flow_statistics=None, messages=None):
-        if messages is None:
-            messages = []
-        self.flow_statistics = flow_statistics
-        self.messages = messages

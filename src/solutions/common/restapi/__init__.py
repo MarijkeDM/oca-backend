@@ -22,9 +22,10 @@ import logging
 import os
 from types import NoneType
 
+from google.appengine.ext import db, deferred
+
 from babel.dates import format_date
 from babel.numbers import format_currency
-from google.appengine.ext import db, deferred
 from mcfw.consts import MISSING
 from mcfw.properties import azzert, get_members
 from mcfw.restapi import rest, GenericRESTRequestHandler
@@ -93,7 +94,6 @@ from solutions.common.models.repair import SolutionRepairSettings
 from solutions.common.models.sandwich import SandwichType, SandwichTopping, SandwichOption, SandwichSettings, \
     SandwichOrder
 from solutions.common.models.static_content import SolutionStaticContent
-from solutions.common.models.statistics import AppBroadcastStatistics
 from solutions.common.to import ServiceMenuFreeSpotsTO, SolutionStaticContentTO, SolutionSettingsTO, \
     MenuTO, EventItemTO, PublicEventItemTO, SolutionAppointmentWeekdayTimeframeTO, BrandingSettingsTO, \
     SolutionRepairOrderTO, SandwichSettingsTO, SandwichOrderTO, SolutionGroupPurchaseTO, \
@@ -104,7 +104,7 @@ from solutions.common.to import ServiceMenuFreeSpotsTO, SolutionStaticContentTO,
     ServiceMenuItemWithCoordinatesListTO, SolutionGoogleCalendarStatusTO, PictureReturnStatusTO, SaveSettingsResultTO, \
     SaveSettingsReturnStatusTO, AppUserRolesTO, CustomerSignupTO
 from solutions.common.to.broadcast import BroadcastOptionsTO, SubscriptionInfoTO
-from solutions.common.to.statistics import AppBroadcastStatisticsTO, StatisticsResultTO
+from solutions.common.to.statistics import StatisticsResultTO
 from solutions.common.utils import is_default_service_identity, create_service_identity_user_wo_default
 from solutions.flex import SOLUTION_FLEX
 
@@ -990,33 +990,11 @@ def load_friends_list(batch_count, cursor):
 def load_service_statistics():
     session_ = users.get_current_session()
     service_identity = session_.service_identity
-    service_identity_user = create_service_identity_user(users.get_current_user(),
-                                                         service_identity or ServiceIdentity.DEFAULT)
-    rpc = db.get_async(AppBroadcastStatistics.create_key(service_identity_user))
     si_stats = system.get_statistics(service_identity)
-    app_broadcast_stats = rpc.get_result()
 
     result = StatisticsResultTO()
     result.service_identity_statistics = si_stats
-    result.has_app_broadcasts = False
-    if app_broadcast_stats and len(app_broadcast_stats.tags) > 0:
-        result.has_app_broadcasts = True
     return result
-
-
-@rest('/common/statistics/app_broadcasts', 'get', silent_result=True, read_only_access=True)
-@returns(AppBroadcastStatisticsTO)
-@arguments()
-def rest_get_app_broadcast_statistics():
-    service_identity = users.get_current_session().service_identity or ServiceIdentity.DEFAULT
-    service_identity_user = create_service_identity_user(users.get_current_user(), service_identity)
-    app_broadcast_statistics = db.get(AppBroadcastStatistics.create_key(service_identity_user))
-    flow_stats = messages = None
-    if app_broadcast_statistics and app_broadcast_statistics.tags:
-        flow_stats = get_flow_statistics(app_broadcast_statistics.tags, FlowStatisticsTO.VIEW_STEPS, 99999,
-                                         FlowStatisticsTO.GROUP_BY_YEAR, service_identity)
-        messages = app_broadcast_statistics.messages
-    return AppBroadcastStatisticsTO(flow_stats, messages)
 
 
 @rest("/common/broadcast/subscribed", "get")

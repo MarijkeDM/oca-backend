@@ -30,14 +30,14 @@ from types import NoneType
 import urllib
 import urlparse
 
-from PIL.Image import Image
-from dateutil.relativedelta import relativedelta
+from google.appengine.api import search, images, users as gusers
+from google.appengine.ext import deferred, db
 
+from PIL.Image import Image
 from apiclient.discovery import build
 from apiclient.errors import HttpError
 from babel.dates import format_datetime, get_timezone, format_date
-from google.appengine.api import search, images, users as gusers
-from google.appengine.ext import deferred, db
+from dateutil.relativedelta import relativedelta
 import httplib2
 from mcfw.cache import cached
 from mcfw.properties import azzert
@@ -46,7 +46,6 @@ from mcfw.utils import normalize_search_string, chunks
 from oauth2client.appengine import OAuth2Decorator
 from oauth2client.client import HttpAccessTokenRefreshError
 from rogerthat.bizz.app import get_app
-from rogerthat.bizz.job.app_broadcast import test_send_app_broadcast, send_app_broadcast
 from rogerthat.bizz.rtemail import EMAIL_REGEX
 from rogerthat.consts import WEEK, SCHEDULED_QUEUE, FAST_QUEUE, \
     OFFICIALLY_SUPPORTED_COUNTRIES, MC_DASHBOARD, DEBUG
@@ -60,14 +59,13 @@ from rogerthat.restapi.user import get_reset_password_url_params
 from rogerthat.rpc import users
 from rogerthat.rpc.rpc import rpc_items
 from rogerthat.settings import get_server_settings
-from rogerthat.to.service import UserDetailsTO
 from rogerthat.translations import DEFAULT_LANGUAGE
 from rogerthat.utils import bizz_check, now, channel, get_epoch_from_datetime, send_mail
 from rogerthat.utils.app import create_app_user_by_email
 from rogerthat.utils.crypto import encrypt, decrypt
 from rogerthat.utils.location import geo_code, GeoCodeStatusException, GeoCodeZeroResultsException, \
     address_to_coordinates, GeoCodeException
-from rogerthat.utils.service import create_service_identity_user, add_slash_default
+from rogerthat.utils.service import create_service_identity_user
 from rogerthat.utils.transactions import run_in_transaction, run_in_xg_transaction
 from shop import SHOP_JINJA_ENVIRONMENT, SHOP_TEMPLATES_FOLDER
 from shop.business.i18n import shop_translate
@@ -93,15 +91,14 @@ from solutions import SOLUTION_COMMON, translate as common_translate
 from solutions.common.bizz import SolutionModule, common_provision
 from solutions.common.bizz.grecaptcha import recaptcha_verify
 from solutions.common.bizz.jobs import delete_solution
-from solutions.common.bizz.service import new_inbox_message, send_signup_update_messages
 from solutions.common.bizz.messaging import send_inbox_forwarders_message
-from solutions.common.dal import get_solution_settings, get_solution_settings_or_identity_settings
+from solutions.common.bizz.service import new_inbox_message, send_signup_update_messages
+from solutions.common.dal import get_solution_settings
 from solutions.common.dal.hints import get_solution_hints
 from solutions.common.models import SolutionInboxMessage
 from solutions.common.models.hints import SolutionHint
 from solutions.common.models.qanda import Question
-from solutions.common.models.statistics import AppBroadcastStatistics
-from solutions.common.to import ProvisionResponseTO, SolutionInboxMessageTO
+from solutions.common.to import ProvisionResponseTO
 from solutions.flex.bizz import create_flex_service
 import stripe
 from xhtml2pdf import pisa
@@ -2476,28 +2473,6 @@ def export_customers_csv(google_user):
 def get_regiomanagers_by_app_id(app_id):
     azzert(app_id)
     return RegioManager.list_by_app_id(app_id)
-
-
-@returns()
-@arguments(service=unicode, app_ids=[unicode], message=unicode, tester=unicode)
-def post_app_broadcast(service, app_ids, message, tester=None):
-    azzert(is_admin(gusers.get_current_user()))
-    service_user = users.User(service)
-    service_identity_user = add_slash_default(service_user)
-    identifier = str(now())
-
-    def trans():
-        if tester:
-            test_send_app_broadcast(service_identity_user, app_ids, message, identifier, tester)
-        else:
-            stats_key = AppBroadcastStatistics.create_key(service_identity_user)
-            stats = db.get(stats_key) or AppBroadcastStatistics(key=stats_key)
-            tag = send_app_broadcast(service_identity_user, app_ids, message, identifier)
-            stats.tags.append(tag)
-            stats.messages.append(message)
-            stats.put()
-
-    run_in_transaction(trans, xg=True)
 
 
 def create_customer_service_to(name, address1, address2, city, zip_code, email, language, currency, phone_number,

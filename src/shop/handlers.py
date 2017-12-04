@@ -24,11 +24,11 @@ import os
 import re
 import urllib
 
-import webapp2
 from google.appengine.api import search, urlfetch, users as gusers
 from google.appengine.api.urlfetch_errors import DeadlineExceededError
 from google.appengine.ext import db
 from google.appengine.ext.webapp import template
+import webapp2
 
 from dateutil.relativedelta import relativedelta
 from mcfw.cache import cached
@@ -362,17 +362,6 @@ class GenerateQRCodesHandler(webapp2.RequestHandler):
         if not is_admin(current_user):
             self.abort(403)
         path = os.path.join(os.path.dirname(__file__), 'html', 'generate_qr_codes.html')
-        context = get_shop_context()
-        self.response.out.write(template.render(path, context))
-
-
-class AppBroadcastHandler(webapp2.RequestHandler):
-
-    def get(self):
-        current_user = gusers.get_current_user()
-        if not is_admin(current_user):
-            self.abort(403)
-        path = os.path.join(os.path.dirname(__file__), 'html', 'app_broadcast.html')
         context = get_shop_context()
         self.response.out.write(template.render(path, context))
 
