@@ -367,7 +367,7 @@
                 };
             </javascriptCode>
         </flowCode>
-        
+
         <flowCode
             id="flowcode_calculate_payment"
             exceptionReference="flush_advanced_order_processing">
@@ -395,18 +395,19 @@
                     if (amount &lt;= 0) {
                         return {outlet: 'flush_advanced_order_processing'};
                     }
-                    
+
                     var amountStr = (amount / 100).toFixed(2);
 
                     var nextStepResult = {};
                     nextStepResult.outlet ='message_pay';
                     nextStepResult.message = 'The total amount of this order is ' + amountStr + ' euro.';
                     nextStepResult.defaultValue = {
-			            'methods': [{
-                            'provider_id': 'payconiq',
-                            'currency': 'EUR',
-                            'amount': amount,
-                            'precision': 2
+                        target: rogerthat.service.account,
+			            methods: [{
+                            provider_id: 'payconiq',
+                            currency: 'EUR',
+                            amount: amount,
+                            precision: 2
                         }]
 			        };
                     return nextStepResult;
@@ -420,12 +421,12 @@
                      positiveReference="flush_advanced_order_processing"
                      negativeReference="{% if settings.payment_optional %}flush_advanced_order_processing{% else %}end_advanced_order{% endif %}"
                      vibrate="false" autoLock="true">
-        
+
             <content/>
             <form positiveButtonConfirmation="" negativeButtonConfirmation=""
                   positiveButtonCaption="{% translate language, 'common', 'Next' %}"
                   negativeButtonCaption="{% if settings.payment_optional %}{% translate language, 'common', 'skip' %}{% else %}{% translate language, 'common', 'Cancel' %}{% endif %}">
-                <widget xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="PayWidget" memo="App order" target="todo rogerthat.service.account">
+                <widget xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="PayWidget" memo="App order" target="">
                     <method>
                         <provider_id>payconiq</provider_id>
                         <currency>EUR</currency>
