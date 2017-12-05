@@ -25,14 +25,14 @@ $(function () {
     var ordersDict = {};
     var orders = [];
     var showAllOrders = false;
-    
+
     var paymentEnabled = false;
     var paymentOptional = true;
-    
+
     var TMPL_PAYMENT_ENABLED = '<div class="btn-group">'
         + '      <button class="btn" id="paymentEnabledYes">&nbsp;</button>'
         + '      <button class="btn btn-danger" id="paymentEnabledNo">' + CommonTranslations.DISABLED + '</button>' + '</div>';
-    
+
     var TMPL_PAYMENT_OPTIONAL = '<div class="btn-group">'
         + '      <button class="btn btn-success" id="paymentOptionalYes">' + CommonTranslations.Optional + '</button>'
         + '      <button class="btn" id="paymentOptionalNo">&nbsp;</button>' + '</div>';
@@ -78,10 +78,10 @@ $(function () {
                 var originalOrderType = orderSettings.order_type;
                 orderSettings = data;
                 var headerMenuElement = $('#topmenu').find('li[menu=menu]');
-                if(originalOrderType != data.order_type) {
-                    if(data.order_type === CONSTS.ORDER_TYPE_ADVANCED) {
+                if (originalOrderType != data.order_type) {
+                    if (data.order_type === CONSTS.ORDER_TYPE_ADVANCED) {
                         headerMenuElement.removeClass('hide');
-                    } else if(MODULES.indexOf('menu') === -1) {
+                    } else if (MODULES.indexOf('menu') === -1) {
                         headerMenuElement.addClass('hide');
                     }
                     if (modules.menu) {
@@ -149,7 +149,7 @@ $(function () {
 
         if (order.status !== STATUS_COMPLETED && orderSettings.manual_confirmation) {
             var btnConfirm = $('<button action="confirm" class="btn btn-large btn-primary"><i class="fa fa-reply"><i></button>')
-            btnConfirm.click(function(event) {
+            btnConfirm.click(function (event) {
                 event.stopPropagation();
                 sendMessage(order, CommonTranslations.order_confirmed);
             });
@@ -157,7 +157,7 @@ $(function () {
         }
         if (order.status == STATUS_RECEIVED) {
             var btnReady = $('<button action="ready" class="btn btn-large btn-success"><i class="icon-ok icon-white"></i></button>').attr("order_key", order.key).click(
-                function(event) {
+                function (event) {
                     event.stopPropagation();
                     var orderKey = $(this).attr("order_key");
                     readyOrderPressed(orderKey);
@@ -230,7 +230,7 @@ $(function () {
     };
 
     var fadeOutMessageAndUpdateBadge = function (orderKey) {
-        $('#order').find('tr[order_key="' + orderKey + '"]').fadeOut('normal', function() {
+        $('#order').find('tr[order_key="' + orderKey + '"]').fadeOut('normal', function () {
             $(this).remove();
         });
         var badge = $('.sln-orders-badge');
@@ -239,28 +239,28 @@ $(function () {
         sln.resize_header();
     };
 
-    var sendMessage = function(order, defaultMessage) {
+    var sendMessage = function (order, defaultMessage) {
         sln.inputBox(function (message) {
-            sln.call({
-                url: "/common/order/sendmessage",
-                type: "POST",
-                data: {
-                    data: JSON.stringify({
-                        order_key: order.key,
-                        order_status: STATUS_RECEIVED,
-                        message: message
-                    })
-                },
-                success: function (data) {
-                    if (!data.success) {
-                        return sln.alert(data.errormsg, null, CommonTranslations.ERROR);
+                sln.call({
+                    url: "/common/order/sendmessage",
+                    type: "POST",
+                    data: {
+                        data: JSON.stringify({
+                            order_key: order.key,
+                            order_status: STATUS_RECEIVED,
+                            message: message
+                        })
+                    },
+                    success: function (data) {
+                        if (!data.success) {
+                            return sln.alert(data.errormsg, null, CommonTranslations.ERROR);
+                        }
                     }
-                }
-            });
-        }, CommonTranslations.REPLY, null,
-        CommonTranslations.REPLY_TO_MORE_INFO.replace("%(username)s", order.sender_name),
-        defaultMessage);
-    }
+                });
+            }, CommonTranslations.REPLY, null,
+            CommonTranslations.REPLY_TO_MORE_INFO.replace("%(username)s", order.sender_name),
+            defaultMessage);
+    };
 
     var orderViewPressed = function (orderKey) {
         var order = ordersDict[orderKey];
@@ -476,27 +476,27 @@ $(function () {
         showMeridian: false,
         minuteStep: 5
     });
-    
+
     var loadPaymentSettings = function () {
         sln.call({
             url: "/common/payments/settings",
             type: "GET",
             success: function (data) {
-            	setPaymentEnabled(data.enabled);
-            	setPaymentOptional(data.optional);
+                setPaymentEnabled(data.enabled);
+                setPaymentOptional(data.optional);
             },
             error: sln.showAjaxError
         });
     };
-    
+
     var savePaymentSettings = function () {
-    	sln.call({
+        sln.call({
             url: "/common/payments/settings",
             type: "POST",
             data: {
-            	data: JSON.stringify({
-            		enabled: paymentEnabled,
-            		optional: paymentOptional
+                data: JSON.stringify({
+                    enabled: paymentEnabled,
+                    optional: paymentOptional
                 })
             },
             success: function (data) {
@@ -507,26 +507,26 @@ $(function () {
             error: sln.showAjaxError
         });
     };
-    
+
     var loadPayconiq = function () {
         sln.call({
             url: "/common/payments/payconiq",
             type: "GET",
             success: function (data) {
-            	$("#payconicMerchantId").val(data.merchant_id ? data.merchant_id : '' );
-            	$("#payconicOnlineKey").val(data.online_key ? data.online_key : '');
-            	$("#payconiqAccessToken").val(data.jwt ? data.jwt : '');
+                $("#payconicMerchantId").val(data.merchant_id ? data.merchant_id : '');
+                $("#payconicOnlineKey").val(data.online_key ? data.online_key : '');
+                $("#payconiqAccessToken").val(data.jwt ? data.jwt : '');
             }
         });
     };
 
     $("#save_payconiq_settings").click(function () {
-    	sln.call({
+        sln.call({
             url: "/common/payments/payconiq",
             type: "POST",
             data: {
                 data: JSON.stringify({
-                	merchant_id: $("#payconicMerchantId").val(),
+                    merchant_id: $("#payconicMerchantId").val(),
                     online_key: $("#payconicOnlineKey").val(),
                     jwt: $("#payconiqAccessToken").val()
                 })
@@ -539,14 +539,14 @@ $(function () {
             }
         });
     });
-    
+
     function togglePaymentEnabled() {
         setPaymentEnabled(!paymentEnabled);
         savePaymentSettings();
     }
 
     function setPaymentEnabled(newPaymentEnabled) {
-    	paymentEnabled = newPaymentEnabled;
+        paymentEnabled = newPaymentEnabled;
         if (newPaymentEnabled) {
             $('#paymentEnabledYes').addClass("btn-success").text(CommonTranslations.ENABLED);
             $('#paymentEnabledNo').removeClass("btn-danger").html('&nbsp;');
@@ -555,14 +555,14 @@ $(function () {
             $('#paymentEnabledNo').addClass("btn-danger").text(CommonTranslations.DISABLED);
         }
     }
-    
+
     function togglePaymentOptional() {
         setPaymentOptional(!paymentOptional);
         savePaymentSettings();
     }
 
     function setPaymentOptional(newPaymentOptional) {
-    	paymentOptional = newPaymentOptional;
+        paymentOptional = newPaymentOptional;
         if (newPaymentOptional) {
             $('#paymentOptionalYes').addClass("btn-success").text(CommonTranslations.Optional);
             $('#paymentOptionalNo').removeClass("btn-danger").html('&nbsp;');
@@ -576,11 +576,12 @@ $(function () {
     loadOrders();
     renderOrderSettings(orderSettings); // orderSettings defined in index.html
     updateShowHideOrders();
+    loadPaymentSettings();
     loadPayconiq();
-    
+
     $(".payment-enabled").html(TMPL_PAYMENT_ENABLED);
     $(".payment-optional").html(TMPL_PAYMENT_OPTIONAL);
-    
+
     $('#paymentEnabledYes').click(togglePaymentEnabled);
     $('#paymentEnabledNo').click(togglePaymentEnabled);
     $('#paymentOptionalYes').click(togglePaymentOptional);
