@@ -398,19 +398,19 @@
 
                     var amountStr = (amount / 100).toFixed(2);
 
-                    var nextStepResult = {};
-                    nextStepResult.outlet ='message_pay';
-                    nextStepResult.message = 'The total amount of this order is ' + amountStr + ' euro.';
-                    nextStepResult.defaultValue = {
-                        target: rogerthat.service.account,
-			            methods: [{
-                            provider_id: 'payconiq',
-                            currency: 'EUR',
-                            amount: amount,
-                            precision: 2
-                        }]
-			        };
-                    return nextStepResult;
+                    return {
+                        outlet:'message_pay',
+                        message: "{% translate language, 'common', 'total_amount_of_order_is_x', '_duplicate_backslashes=True' %}".replace('%(amount)s', amountStr).replace('%(currency)s', 'euro'),
+                        defaultValue: {
+                            target: rogerthat.service.account,
+                            methods: [{
+                                provider_id: 'payconiq',
+                                currency: 'EUR',
+                                amount: amount,
+                                precision: 2
+                            }]
+                        }
+                    };
                 };
             </javascriptCode>
         </flowCode>
